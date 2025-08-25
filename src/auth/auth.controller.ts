@@ -1,12 +1,15 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common'
 import { AuthService } from './auth.service'
+import { RegisterBodyDTO, RegisterResDTO } from 'src/auth/dto/auth.dto'
+import { ZodSerializerDto } from 'nestjs-zod'
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  create(@Body() body: any) {
+  @ZodSerializerDto(RegisterResDTO)
+  create(@Body() body: RegisterBodyDTO) {
     return this.authService.register(body)
   }
 
