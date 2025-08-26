@@ -1,6 +1,6 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common'
 import { AuthService } from './auth.service'
-import { RegisterBodyDTO, RegisterResDTO } from 'src/auth/dto/auth.dto'
+import { RegisterBodyDTO, RegisterResDTO, SendOPTBodyDTO } from 'src/auth/dto/auth.dto'
 import { ZodSerializerDto } from 'nestjs-zod'
 
 @Controller('auth')
@@ -9,13 +9,13 @@ export class AuthController {
 
   @Post('register')
   @ZodSerializerDto(RegisterResDTO)
-  create(@Body() body: RegisterBodyDTO) {
-    return this.authService.register(body)
+  async create(@Body() body: RegisterBodyDTO) {
+    return await this.authService.register(body)
   }
 
-  @Post('login')
-  findAll(@Body() body: any) {
-    return this.authService.login(body)
+  @Post('otp')
+  async sendOTP(@Body() body: SendOPTBodyDTO) {
+    return await this.authService.sendOTP(body)
   }
 
   @Post('refresh-token')

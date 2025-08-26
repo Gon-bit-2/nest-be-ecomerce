@@ -1,15 +1,22 @@
-import { BadRequestException, Injectable } from '@nestjs/common'
-import { RegisterBodyType } from 'src/auth/auth.model'
+import { BadRequestException, Injectable, UnprocessableEntityException } from '@nestjs/common'
+import { addMilliseconds } from 'date-fns'
+import { RegisterBodyType, SendOTPBodyType } from 'src/auth/auth.model'
 import { AuthRepository } from 'src/auth/repository/auth.repository'
+import { VerificationCodeRepository } from 'src/auth/repository/verificationCode.repo'
 import { RolesService } from 'src/auth/roles.service'
+import { generateOTP } from 'src/shared/helpers'
+import { ShareUserRepository } from 'src/shared/repositories/shared-user.repo'
 import { HashingService } from 'src/shared/service/hashing.service'
-
+import ms from 'ms'
+import envConfig from 'src/shared/config'
 @Injectable()
 export class AuthService {
   constructor(
     private readonly hashingService: HashingService,
     private readonly authRepository: AuthRepository,
     private readonly rolesService: RolesService,
+    private readonly shareUserRepository: ShareUserRepository,
+    private readonly verificationCodeRepository: VerificationCodeRepository,
   ) {}
   async register(body: RegisterBodyType) {
     try {
@@ -30,8 +37,26 @@ export class AuthService {
     }
   }
 
-  login(body: any) {
-    return `This action returns all auth`
+  async sendOTP(body: SendOTPBodyType) {
+    //1:check email exists
+    const user = await this.shareUserRepository.findUnique({ email: body.email })
+    if (user) {
+      throw new UnprocessableEntityException([
+        {
+          message: 'Email đã tồn tại',
+          path: 'email',
+        },
+      ])
+    }
+    //2. Tạo mã OTP
+    const code = generateOTP()
+    const verificationCode = await this.verificationCodeRepository.createVerificationCode({
+      email: body.email,
+      code,
+      type: body.type,
+      expiresAt: addMilliseconds(new Date(), ms(envConfig.OTP_EXPIRES_IN)),
+    })
+    return verificationCode
   }
 
   refreshToken(body: any) {

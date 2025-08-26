@@ -1,23 +1,7 @@
-import { UserStatus } from 'src/shared/constants/auth.constant'
+import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant'
+import { UserSchema } from 'src/shared/model/shared-user.model'
 import z from 'zod'
 
-export const UserSchema = z.object({
-  id: z.number(),
-  email: z.string().email().nonempty(),
-  password: z.string().min(6).max(100).nonempty(),
-  name: z.string().min(1).max(100).nonempty(),
-  phoneNumber: z.string().min(10).max(15).nonempty(),
-  avatar: z.string().nullable(),
-  totpSecret: z.string().nullable(),
-  status: z.enum([UserStatus.ACTIVE, UserStatus.INACTIVE, UserStatus.BLOCKED]),
-  roleId: z.number().positive(),
-  createdById: z.number().nullable(),
-  updatedById: z.number().nullable(),
-  deleteAt: z.date().nullable().optional(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-})
-export type UserType = z.infer<typeof UserSchema>
 export const RegisterBodySchema = UserSchema.pick({
   email: true,
   password: true,
@@ -38,9 +22,27 @@ export const RegisterBodySchema = UserSchema.pick({
     }
   })
 export type RegisterBodyType = z.infer<typeof RegisterBodySchema>
-
+//
 export const RegisterResSchema = UserSchema.omit({
   password: true,
   totpSecret: true,
 })
 export type RegisterResType = z.infer<typeof RegisterResSchema>
+
+//
+export const VerificationCode = z.object({
+  id: z.number(),
+  email: z.string().email(),
+  code: z.string().length(6),
+  type: z.enum([TypeOfVerificationCode.REGISTER, TypeOfVerificationCode.FORGOT_PASSWORD]),
+  expiresAt: z.date(),
+  createdAt: z.date(),
+})
+export type VerificationCodeType = z.infer<typeof VerificationCode>
+//
+export const SendOTPBodySchema = VerificationCode.pick({
+  email: true,
+  type: true,
+}).strict()
+
+export type SendOTPBodyType = z.infer<typeof SendOTPBodySchema>
