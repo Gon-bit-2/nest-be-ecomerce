@@ -9,6 +9,8 @@ import { ShareUserRepository } from 'src/shared/repositories/shared-user.repo'
 import { HashingService } from 'src/shared/service/hashing.service'
 import ms from 'ms'
 import envConfig from 'src/shared/config'
+import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant'
+import { EmailService } from 'src/shared/service/email.service'
 @Injectable()
 export class AuthService {
   constructor(
@@ -17,9 +19,29 @@ export class AuthService {
     private readonly rolesService: RolesService,
     private readonly shareUserRepository: ShareUserRepository,
     private readonly verificationCodeRepository: VerificationCodeRepository,
+    private readonly emailService: EmailService,
   ) {}
   async register(body: RegisterBodyType) {
     try {
+      const verificationCode = await this.verificationCodeRepository.findUniqueVerificationCode({
+        email: body.email,
+        code: body.code,
+        type: TypeOfVerificationCode.REGISTER,
+      })
+      console.log('VerificationCode:::::', verificationCode)
+
+      if (!verificationCode) {
+        throw new UnprocessableEntityException({
+          message: 'Mã OTP không hợp lệ',
+          path: 'code',
+        })
+      }
+      if (verificationCode.expiresAt < new Date()) {
+        throw new UnprocessableEntityException({
+          message: 'Mã OTP đã hết hạn',
+          path: 'code',
+        })
+      }
       const clientRoleId = await this.rolesService.getClientRoleId()
       const hashedPassword = await this.hashingService.hash(body.password)
       const user = await this.authRepository.createUser({
@@ -56,6 +78,16 @@ export class AuthService {
       type: body.type,
       expiresAt: addMilliseconds(new Date(), ms(envConfig.OTP_EXPIRES_IN)),
     })
+    const { error, data } = await this.emailService.sendOTPToEMAIL({
+      email: body.email,
+      code,
+    })
+    if (error) {
+      throw new UnprocessableEntityException({
+        message: 'Send OTP FAIL',
+        path: 'Code',
+      })
+    }
     return verificationCode
   }
 
