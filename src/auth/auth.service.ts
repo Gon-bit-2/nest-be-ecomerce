@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, UnprocessableEntityException } from '@nestjs/common'
 import { addMilliseconds } from 'date-fns'
-import { RegisterBodyType, SendOTPBodyType } from 'src/auth/auth.model'
+import { LoginBodyType, RegisterBodyType, SendOTPBodyType } from 'src/auth/auth.model'
 import { AuthRepository } from 'src/auth/repository/auth.repository'
 import { VerificationCodeRepository } from 'src/auth/repository/verificationCode.repo'
 import { RolesService } from 'src/auth/roles.service'
@@ -11,6 +11,8 @@ import ms from 'ms'
 import envConfig from 'src/shared/config'
 import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant'
 import { EmailService } from 'src/shared/service/email.service'
+import { TokenService } from 'src/shared/service/token.service'
+import { IAccessTokenPayload } from 'src/shared/types/jwt.type'
 @Injectable()
 export class AuthService {
   constructor(
@@ -20,6 +22,7 @@ export class AuthService {
     private readonly shareUserRepository: ShareUserRepository,
     private readonly verificationCodeRepository: VerificationCodeRepository,
     private readonly emailService: EmailService,
+    private readonly tokenService: TokenService,
   ) {}
   async register(body: RegisterBodyType) {
     try {
@@ -91,15 +94,67 @@ export class AuthService {
     return verificationCode
   }
 
+  async login(body: LoginBodyType & { userAgent: string; ip: string }) {
+    try {
+      const user = await this.authRepository.findUniqueIncludeRole({
+        email: body.email,
+      })
+      if (!user) {
+        throw new UnprocessableEntityException([
+          {
+            message: 'Email Không Tồn Tại',
+            path: 'email',
+          },
+        ])
+      }
+      const isMatchPassword = await this.hashingService.compare(body.password, user.password)
+      if (!isMatchPassword) {
+        throw new UnprocessableEntityException([
+          {
+            message: 'Mật Khẩu Không Đúng',
+            path: 'password',
+          },
+        ])
+      }
+      const device = await this.authRepository.createDevice({
+        userId: user.id,
+        userAgent: body.userAgent,
+        ip: body.ip,
+      })
+      const tokens = await this.generateTokens({
+        userId: user.id,
+        deviceId: device.id,
+        roleId: user.roleId,
+        roleName: user.role.name,
+      })
+      return tokens
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new BadRequestException('Đăng Nhập Thất Bại!', error)
+      }
+    }
+  }
+
+  async generateTokens({ userId, deviceId, roleId, roleName }: IAccessTokenPayload) {
+    const [accessToken, refreshToken] = await Promise.all([
+      this.tokenService.signAccessToken({ userId, deviceId, roleId, roleName }),
+      this.tokenService.signRefreshToken({ userId }),
+    ])
+    //
+    const decodedRefreshToken = await this.tokenService.verifyRefreshToken(refreshToken)
+    await this.authRepository.createRefreshToken({
+      token: refreshToken,
+      userId,
+      expiresAt: new Date(decodedRefreshToken.exp * 1000),
+      deviceId,
+    })
+    return { accessToken, refreshToken }
+  }
   refreshToken(body: any) {
     return `This action returns a #${body} auth`
   }
 
   logout(refreshToken: string) {
     return `This action updates a #${refreshToken} auth`
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} auth`
   }
 }
