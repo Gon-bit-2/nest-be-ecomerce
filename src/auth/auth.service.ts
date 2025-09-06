@@ -7,7 +7,7 @@ import { RolesService } from 'src/auth/roles.service'
 import { generateOTP } from 'src/shared/helpers'
 import { ShareUserRepository } from 'src/shared/repositories/shared-user.repo'
 import { HashingService } from 'src/shared/service/hashing.service'
-import ms from 'ms'
+import ms, { StringValue } from 'ms'
 import envConfig from 'src/shared/config'
 import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant'
 import { EmailService } from 'src/shared/service/email.service'
@@ -16,13 +16,13 @@ import { IAccessTokenPayload } from 'src/shared/types/jwt.type'
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly hashingService: HashingService,
-    private readonly authRepository: AuthRepository,
     private readonly rolesService: RolesService,
-    private readonly shareUserRepository: ShareUserRepository,
-    private readonly verificationCodeRepository: VerificationCodeRepository,
     private readonly emailService: EmailService,
     private readonly tokenService: TokenService,
+    private readonly hashingService: HashingService,
+    private readonly authRepository: AuthRepository,
+    private readonly shareUserRepository: ShareUserRepository,
+    private readonly verificationCodeRepository: VerificationCodeRepository,
   ) {}
   async register(body: RegisterBodyType) {
     try {
@@ -31,7 +31,7 @@ export class AuthService {
         code: body.code,
         type: TypeOfVerificationCode.REGISTER,
       })
-      console.log('VerificationCode:::::', verificationCode)
+      // console.log('VerificationCode:::::', verificationCode)
 
       if (!verificationCode) {
         throw new UnprocessableEntityException({
@@ -79,7 +79,7 @@ export class AuthService {
       email: body.email,
       code,
       type: body.type,
-      expiresAt: addMilliseconds(new Date(), ms(envConfig.OTP_EXPIRES_IN)),
+      expiresAt: addMilliseconds(new Date(), ms(envConfig.OTP_EXPIRES_IN as StringValue)),
     })
     const { error, data } = await this.emailService.sendOTPToEMAIL({
       email: body.email,
