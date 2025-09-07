@@ -61,6 +61,14 @@ export const LoginResSchema = z.object({
 })
 export type LoginResType = z.infer<typeof LoginResSchema>
 //refresh token
+export const RefreshTokenSchema = z.object({
+  token: z.string(),
+  userId: z.number(),
+  deviceId: z.number(),
+  expiresAt: z.date(),
+  createdAt: z.date(),
+})
+export type RefreshTokenType = z.infer<typeof RefreshTokenSchema>
 export const RefreshTokenBodySchema = z
   .object({
     refreshToken: z.string(),
@@ -95,3 +103,6 @@ export const RoleSchema = z.object({
   updatedAt: z.date(),
 })
 export type RoleType = z.infer<typeof RoleSchema>
+//logout
+export const LogoutBodySchema = RefreshTokenBodySchema
+export type LogoutBodyType = RefreshTokenBodyType

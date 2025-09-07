@@ -3,7 +3,7 @@ import { REQUEST_USER_KEY } from 'src/shared/decorators/custom-validator.decorat
 import { AccessTokenPayload } from 'src/shared/types/jwt.type'
 
 export const ActiveUser = createParamDecorator((field: keyof AccessTokenPayload | undefined, ctx: ExecutionContext) => {
-  const request = ctx.switchToHttp().getRequest()
+  const request = ctx.switchToHttp().getRequest<Partial<Record<typeof REQUEST_USER_KEY, AccessTokenPayload>>>()
   const user: AccessTokenPayload | undefined = request[REQUEST_USER_KEY]
   return field ? user?.[field] : user
 })

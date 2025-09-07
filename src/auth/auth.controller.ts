@@ -1,9 +1,8 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common'
+import { Controller, Post, Body, HttpCode, HttpStatus, Ip } from '@nestjs/common'
 import { AuthService } from './auth.service'
 import { LoginBodyDTO, RegisterBodyDTO, RegisterResDTO, SendOPTBodyDTO } from 'src/auth/dto/auth.dto'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { UserAgent } from 'src/shared/decorators/user-agent.decorator'
-import { IP } from 'src/shared/decorators/ip.decorator'
 
 @Controller('auth')
 export class AuthController {
@@ -27,7 +26,7 @@ export class AuthController {
   }
 
   @Post('login')
-  update(@Body() body: LoginBodyDTO, @UserAgent() userAgent: string, @IP() ip: string) {
+  update(@Body() body: LoginBodyDTO, @UserAgent() userAgent: string, @Ip() ip: string) {
     return this.authService.login({
       ...body,
       userAgent,
