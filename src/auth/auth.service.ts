@@ -1,6 +1,12 @@
-import { BadRequestException, Injectable, UnprocessableEntityException } from '@nestjs/common'
+import {
+  BadRequestException,
+  HttpException,
+  Injectable,
+  UnauthorizedException,
+  UnprocessableEntityException,
+} from '@nestjs/common'
 import { addMilliseconds } from 'date-fns'
-import { LoginBodyType, RegisterBodyType, SendOTPBodyType } from 'src/auth/auth.model'
+import { LoginBodyType, RefreshTokenBodyType, RegisterBodyType, SendOTPBodyType } from 'src/auth/auth.model'
 import { AuthRepository } from 'src/auth/repository/auth.repository'
 import { VerificationCodeRepository } from 'src/auth/repository/verificationCode.repo'
 import { RolesService } from 'src/auth/roles.service'
@@ -150,8 +156,38 @@ export class AuthService {
     })
     return { accessToken, refreshToken }
   }
-  refreshToken(body: any) {
-    return `This action returns a #${body} auth`
+  async refreshToken({ refreshToken, userAgent, ip }: RefreshTokenBodyType & { userAgent: string; ip: string }) {
+    try {
+      //1 check token hợp lệ
+      const { userId } = await this.tokenService.verifyRefreshToken(refreshToken)
+      //2 check refreshtoken exist
+      const tokenInDB = await this.authRepository.findUniqueRefreshTokenIncludeUserRole({
+        token: refreshToken,
+      })
+      if (!tokenInDB) {
+        throw new UnauthorizedException('Refresh Token đã sử dụng')
+      }
+      const {
+        deviceId,
+        user: { roleId, name: roleName },
+      } = tokenInDB
+      //3. Cập nhập device
+      const $updateDevice = this.authRepository.updateDevice(deviceId, {
+        userAgent,
+        ip,
+      })
+      //4. xóa token cũ
+      const $deleteToken = this.authRepository.deleteRefreshToken({ token: refreshToken })
+      //5. tạo cặp token mới
+      const $tokens = this.generateTokens({ userId, deviceId, roleId, roleName })
+      const [, , tokens] = await Promise.all([$updateDevice, $deleteToken, $tokens])
+      return tokens
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error
+      }
+      throw new UnprocessableEntityException()
+    }
   }
 
   logout(refreshToken: string) {

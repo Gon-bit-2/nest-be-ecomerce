@@ -31,11 +31,36 @@ export class AuthRepository {
   async createRefreshToken(data: { token: string; userId: number; expiresAt: Date; deviceId: number }) {
     return await this.prismaService.refreshToken.create({ data })
   }
+  async findUniqueRefreshTokenIncludeUserRole(uniqueObject: { token: string }) {
+    return await this.prismaService.refreshToken.findUnique({
+      where: uniqueObject,
+      include: {
+        user: {
+          include: {
+            role: true,
+          },
+        },
+      },
+    })
+  }
   async createDevice(
     data: Pick<DeviceType, 'userId' | 'userAgent' | 'ip'> & Partial<Pick<DeviceType, 'isActive' | 'lastActive'>>,
   ) {
     return await this.prismaService.device.create({
       data,
+    })
+  }
+  async updateDevice(deviceId: number, data: Partial<DeviceType>): Promise<DeviceType> {
+    return await this.prismaService.device.update({
+      where: {
+        id: deviceId,
+      },
+      data,
+    })
+  }
+  async deleteRefreshToken(uniqueObject: { token: string }) {
+    return await this.prismaService.refreshToken.delete({
+      where: uniqueObject,
     })
   }
 }

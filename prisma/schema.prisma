@@ -144,7 +144,7 @@ model RefreshToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
   Device    Device?  @relation(fields: [deviceId], references: [id])
-  deviceId  Int?
+  deviceId  Int
 
   @@index([expiresAt])
 }
