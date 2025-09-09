@@ -190,7 +190,26 @@ export class AuthService {
     }
   }
 
-  logout(refreshToken: string) {
-    return `This action updates a #${refreshToken} auth`
+  async logout(refreshToken: string) {
+    try {
+      //1. verify refreshtoken
+      await this.tokenService.verifyRefreshToken(refreshToken)
+
+      //2. delete token
+      const deleteToken = await this.authRepository.deleteRefreshToken({ token: refreshToken })
+
+      //3. cập nhập device
+      await this.authRepository.updateDevice(deleteToken.deviceId, {
+        isActive: false,
+      })
+      return {
+        message: 'Đăng Xuất Thành Công',
+      }
+    } catch (error) {
+      if (error instanceof Error)
+        throw new UnauthorizedException({
+          message: 'Refresh Token Đã Được sử dụng',
+        })
+    }
   }
 }
