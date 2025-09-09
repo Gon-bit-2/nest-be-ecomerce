@@ -1,4 +1,5 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common'
+import { Request } from 'express'
 import envConfig from 'src/shared/config'
 import { TokenService } from 'src/shared/service/token.service'
 
@@ -6,7 +7,7 @@ import { TokenService } from 'src/shared/service/token.service'
 export class XApiKeyGuard implements CanActivate {
   constructor(private readonly tokenService: TokenService) {}
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest()
+    const request = context.switchToHttp().getRequest<Request>()
     const xApiKey = request.headers['x-api-key']
 
     if (xApiKey !== envConfig.API_KEY_SECRET) {

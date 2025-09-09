@@ -5,10 +5,28 @@ import { TokenService } from './service/token.service'
 import { JwtModule } from '@nestjs/jwt'
 import { ShareUserRepository } from 'src/shared/repositories/shared-user.repo'
 import { EmailService } from 'src/shared/service/email.service'
+import { AccessTokenGuard } from 'src/shared/guard/access-token.guard'
+import { XApiKeyGuard } from 'src/shared/guard/x-api-key.guard'
 @Global()
 @Module({
-  providers: [PrismaService, HashingService, TokenService, ShareUserRepository, EmailService],
-  exports: [PrismaService, HashingService, TokenService, ShareUserRepository, EmailService],
+  providers: [
+    PrismaService,
+    HashingService,
+    TokenService,
+    ShareUserRepository,
+    EmailService,
+    AccessTokenGuard,
+    XApiKeyGuard,
+  ],
+  exports: [
+    PrismaService,
+    HashingService,
+    TokenService,
+    ShareUserRepository,
+    EmailService,
+    AccessTokenGuard,
+    XApiKeyGuard,
+  ],
   imports: [JwtModule],
 })
 export class SharedModule {}

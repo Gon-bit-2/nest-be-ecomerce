@@ -3,16 +3,21 @@ import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { SharedModule } from 'src/shared/shared.module'
 import { AuthModule } from './auth/auth.module'
-import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core'
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core'
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod'
 import CustomZodValidationPipe from 'src/pipes/custom-zod-validation.pipe'
 import { HttpExceptionFilter } from 'src/filter/http-exception.filter'
+import { AuthenticationGuard } from 'src/shared/guard/authentication.guard'
 
 @Module({
   imports: [SharedModule, AuthModule],
   controllers: [AppController],
   providers: [
     AppService,
+    {
+      provide: APP_GUARD,
+      useClass: AuthenticationGuard,
+    },
     {
       provide: APP_PIPE,
       useClass: CustomZodValidationPipe,
