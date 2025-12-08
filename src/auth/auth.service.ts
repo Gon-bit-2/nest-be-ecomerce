@@ -97,7 +97,9 @@ export class AuthService {
         path: 'Code',
       })
     }
-    return verificationCode
+    return {
+      message: 'Gửi Mã Otp thành công',
+    }
   }
 
   async login(body: LoginBodyType & { userAgent: string; ip: string }) {
