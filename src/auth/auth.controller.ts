@@ -1,6 +1,7 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Ip } from '@nestjs/common'
+import { Controller, Post, Body, HttpCode, HttpStatus, Ip, Get, Query, Res } from '@nestjs/common'
 import { AuthService } from './auth.service'
 import {
+  GetAuthorizationUrlResDTO,
   LoginBodyDTO,
   LoginResDTO,
   RefreshTokenBodyDTO,
@@ -12,10 +13,16 @@ import { ZodSerializerDto } from 'nestjs-zod'
 import { UserAgent } from 'src/shared/decorators/user-agent.decorator'
 import { MessageResDTO } from 'src/shared/dtos/response.dto'
 import { isPublic } from 'src/shared/decorators/auth.decorator'
+import { GoogleService } from './google.service'
+import { type Response } from 'express'
+import envConfig from 'src/shared/config'
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly googleService: GoogleService,
+  ) {}
   @Post('otp')
   @isPublic()
   async sendOTP(@Body() body: SendOPTBodyDTO) {
@@ -54,5 +61,29 @@ export class AuthController {
   @ZodSerializerDto(MessageResDTO)
   logout(@Body() body: RefreshTokenBodyDTO) {
     return this.authService.logout(body.refreshToken)
+  }
+  @Get('google-link')
+  @isPublic()
+  @ZodSerializerDto(GetAuthorizationUrlResDTO)
+  getAuthorizationUrl(@UserAgent() userAgent: string, @Ip() ip: string) {
+    return this.googleService.getAuthorizationUrl({
+      userAgent,
+      ip,
+    })
+  }
+
+  @Get('google/callback')
+  @isPublic()
+  async googleCallback(@Query('state') state: string, @Query('code') code: string, @Res() res: Response) {
+    try {
+      const data = await this.googleService.googleCallback({ state, code })
+      return res.redirect(
+        `${envConfig.GOOGLE_CLIENT_REDIRECT_URI}?accessToken=${data.accessToken}&refreshToken=${data.refreshToken}`,
+      )
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Có lỗi khi đăng nhập bằng google vui lòng thử lại cách khác'
+      return res.redirect(`${envConfig.GOOGLE_CLIENT_REDIRECT_URI}?errorMessage=${message}`)
+    }
   }
 }
