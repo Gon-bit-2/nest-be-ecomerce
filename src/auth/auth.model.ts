@@ -117,3 +117,23 @@ export const GetAuthorizationUrlResSchema = z.object({
   url: z.string().url(),
 })
 export type GetAuthorizationUrlResType = z.infer<typeof GetAuthorizationUrlResSchema>
+
+//forgot password
+export const ForgotPasswordBodySchema = z
+  .object({
+    email: z.string().email(),
+    code: z.string().length(6),
+    newPassword: z.string().min(6).max(100).nonempty(),
+    confirmNewPassword: z.string().min(6).max(100).nonempty(),
+  })
+  .strict()
+  .superRefine(({ confirmNewPassword, newPassword }, ctx) => {
+    if (confirmNewPassword !== newPassword) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Mật khẩu không khớp',
+        path: ['confirmNewPassword'],
+      })
+    }
+  })
+export type ForgotPasswordBodyType = z.infer<typeof ForgotPasswordBodySchema>
