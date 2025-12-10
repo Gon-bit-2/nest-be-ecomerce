@@ -35,7 +35,12 @@ export const VerificationCode = z.object({
   id: z.number(),
   email: z.string().email(),
   code: z.string().length(6),
-  type: z.enum([TypeOfVerificationCode.REGISTER, TypeOfVerificationCode.FORGOT_PASSWORD]),
+  type: z.enum([
+    TypeOfVerificationCode.REGISTER,
+    TypeOfVerificationCode.FORGOT_PASSWORD,
+    TypeOfVerificationCode.LOGIN,
+    TypeOfVerificationCode.DISABLE_2FA,
+  ]),
   expiresAt: z.date(),
   createdAt: z.date(),
 })
@@ -47,12 +52,44 @@ export const SendOTPBodySchema = VerificationCode.pick({
 }).strict()
 
 export type SendOTPBodyType = z.infer<typeof SendOTPBodySchema>
-
+//tắt 2fa
+export const DisableTwoFactorBodySchema = z
+  .object({
+    totpCode: z.string().length(6).optional(),
+    code: z.string().length(6).optional(),
+  })
+  .strict()
+  .superRefine(({ totpCode, code }, ctx) => {
+    const message = 'Bạn cần cung cấp mã xác thực 2FA hoặc OTP. Không cung cấp cả hai'
+    if ((totpCode !== undefined) === (code !== undefined)) {
+      ctx.addIssue({
+        code: 'custom',
+        message,
+        path: ['totpCode'],
+      })
+      ctx.addIssue({
+        code: 'custom',
+        message,
+        path: ['code'],
+      })
+    }
+  })
+export type DisableTwoFactorBodyType = z.infer<typeof DisableTwoFactorBodySchema>
+export const TwoFactorSetupResSchema = z.object({
+  secret: z.string(),
+  url: z.string().url(),
+})
+export type TwoFactorSetupResType = z.infer<typeof TwoFactorSetupResSchema>
 // login
 export const LoginBodySchema = UserSchema.pick({
   email: true,
   password: true,
-}).strict()
+})
+  .extend({
+    totpCode: z.string().length(6).optional(), //2fa
+    code: z.string().length(6).optional(), //otp code email
+  })
+  .strict()
 export type LoginBodyType = z.infer<typeof LoginBodySchema>
 
 export const LoginResSchema = z.object({

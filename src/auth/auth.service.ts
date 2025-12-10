@@ -25,6 +25,7 @@ import { TypeOfVerificationCode, TypeOfVerificationCodeType } from 'src/shared/c
 import { EmailService } from 'src/shared/service/email.service'
 import { TokenService } from 'src/shared/service/token.service'
 import { IAccessTokenPayload } from 'src/shared/types/jwt.type'
+import { TwoFactorAuthService } from 'src/shared/service/2fa.service'
 @Injectable()
 export class AuthService {
   constructor(
@@ -32,6 +33,7 @@ export class AuthService {
     private readonly emailService: EmailService,
     private readonly tokenService: TokenService,
     private readonly hashingService: HashingService,
+    private readonly twoFactorAuthService: TwoFactorAuthService,
     private readonly authRepository: AuthRepository,
     private readonly shareUserRepository: ShareUserRepository,
     private readonly verificationCodeRepository: VerificationCodeRepository,
@@ -39,9 +41,11 @@ export class AuthService {
   async register(body: RegisterBodyType) {
     try {
       const verificationCode = await this.verificationCodeRepository.findUniqueVerificationCode({
-        email: body.email,
-        code: body.code,
-        type: TypeOfVerificationCode.REGISTER,
+        email_code_type: {
+          email: body.email,
+          code: body.code,
+          type: TypeOfVerificationCode.REGISTER,
+        },
       })
       // console.log('VerificationCode:::::', verificationCode)
 
@@ -67,10 +71,12 @@ export class AuthService {
           phoneNumber: body.phoneNumber,
           roleId: clientRoleId,
         }),
-        this.authRepository.deleteVerificationCode({
-          email: body.email,
-          code: body.code,
-          type: TypeOfVerificationCode.REGISTER,
+        this.verificationCodeRepository.deleteVerificationCode({
+          email_code_type: {
+            email: body.email,
+            code: body.code,
+            type: TypeOfVerificationCode.REGISTER,
+          },
         }),
       ])
       return user
@@ -108,7 +114,7 @@ export class AuthService {
       type: body.type,
       expiresAt: addMilliseconds(new Date(), ms(envConfig.OTP_EXPIRES_IN as StringValue)),
     })
-    const { error, data } = await this.emailService.sendOTPToEMAIL({
+    const { error } = await this.emailService.sendOTPToEMAIL({
       email: body.email,
       code,
     })
@@ -293,14 +299,42 @@ export class AuthService {
     //việc update and delete không phụ thuộc nhau => promise all
     await Promise.all([
       this.authRepository.updateUser({ id: user.id }, { password: hashedPassword }),
-      this.authRepository.deleteVerificationCode({
-        email: body.email,
-        code: body.code,
-        type: TypeOfVerificationCode.FORGOT_PASSWORD,
+      this.verificationCodeRepository.deleteVerificationCode({
+        email_code_type: {
+          email: body.email,
+          code: body.code,
+          type: TypeOfVerificationCode.FORGOT_PASSWORD,
+        },
       }),
     ])
     return {
       message: 'Đổi Mật Khẩu Thành Công',
     }
+  }
+  async twoFactorAuth(userid: number) {
+    //1: lấy user xem đã có 2fa chưa
+    const user = await this.shareUserRepository.findUnique({ id: userid })
+    if (!user) {
+      throw new UnprocessableEntityException([
+        {
+          message: 'User Không Tồn Tại',
+          path: 'id',
+        },
+      ])
+    }
+    if (user.totpSecret) {
+      throw new UnprocessableEntityException([
+        {
+          message: 'User Đã Bật 2FA',
+          path: 'id',
+        },
+      ])
+    }
+    //2: tạo secret và uri
+    const { secret, uri } = this.twoFactorAuthService.generateSecret(user.email)
+    //3: cập nhập secret và user trong db
+    await this.authRepository.updateUser({ id: user.id }, { totpSecret: secret })
+    //4: trả về secret và uri
+    return { secret, uri }
   }
 }

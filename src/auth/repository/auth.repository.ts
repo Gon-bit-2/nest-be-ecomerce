@@ -76,27 +76,15 @@ export class AuthRepository {
   }
   async findUniqueVerificationCode(uniqueObject: { email: string; code: string; type: TypeOfVerificationCodeType }) {
     return await this.prismaService.verificationCode.findUnique({
-      where: uniqueObject,
+      where: {
+        email_code_type: uniqueObject,
+      },
     })
   }
   async updateUser(where: { id: number } | { email: string }, data: Partial<Omit<UserType, 'id'>>) {
     return await this.prismaService.user.update({
       where,
       data,
-    })
-  }
-  async deleteVerificationCode(
-    where:
-      | { id: number }
-      | { email: string }
-      | {
-          email: string
-          code: string
-          type: TypeOfVerificationCodeType
-        },
-  ) {
-    return await this.prismaService.verificationCode.delete({
-      where,
     })
   }
 }
