@@ -90,6 +90,21 @@ export const LoginBodySchema = UserSchema.pick({
     code: z.string().length(6).optional(), //otp code email
   })
   .strict()
+  .superRefine(({ totpCode, code }, ctx) => {
+    //khi nguoi dung truyen ca 2 len thi khong cho qua
+    if (totpCode !== undefined && code !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Bạn chỉ cần cung cấp mã xác thực 2FA hoặc OTP. Không cung cấp cả hai',
+        path: ['totpCode'],
+      })
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Bạn chỉ cần cung cấp mã xác thực 2FA hoặc OTP. Không cung cấp cả hai',
+        path: ['code'],
+      })
+    }
+  })
 export type LoginBodyType = z.infer<typeof LoginBodySchema>
 
 export const LoginResSchema = z.object({

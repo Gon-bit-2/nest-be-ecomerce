@@ -1,6 +1,7 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, Ip, Get, Query, Res } from '@nestjs/common'
 import { AuthService } from './auth.service'
 import {
+  DisableTwoFactorBodyDTO,
   ForgotPasswordBodyDTO,
   GetAuthorizationUrlResDTO,
   LoginBodyDTO,
@@ -101,5 +102,11 @@ export class AuthController {
   @ZodSerializerDto(TwoFactorSetupResDTO)
   twoFactorAuth(@Body() _: EmptyBodyDTO, @ActiveUser('userId') userid: number) {
     return this.authService.twoFactorAuth(userid)
+  }
+  @Post('2fa/disable')
+  @isPublic()
+  @ZodSerializerDto(MessageResDTO)
+  disableTwoFactorAuth(@Body() body: DisableTwoFactorBodyDTO, @ActiveUser('userId') userId: number) {
+    return this.authService.disableTwoFactorAuth({ ...body, userId })
   }
 }

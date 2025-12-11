@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common'
 import { addMilliseconds } from 'date-fns'
 import {
+  DisableTwoFactorBodyType,
   ForgotPasswordBodyType,
   LoginBodyType,
   RefreshTokenBodyType,
@@ -182,6 +183,38 @@ export class AuthService {
           },
         ])
       }
+      //
+      if (user.totpSecret) {
+        if (!body.totpCode && !body.code) {
+          throw new UnprocessableEntityException([
+            {
+              message: 'Mã OTP không hợp lệ',
+              path: 'code',
+            },
+          ])
+        }
+        if (body.totpCode) {
+          const isValid = this.twoFactorAuthService.verifyToken({
+            email: user.email,
+            token: body.totpCode,
+            secret: user.totpSecret,
+          })
+          if (!isValid) {
+            throw new UnprocessableEntityException([
+              {
+                message: 'Mã OTP không hợp lệ',
+                path: 'code',
+              },
+            ])
+          } else if (body.code) {
+            await this.validateVerificationCode({
+              email: user.email,
+              code: body.code,
+              type: TypeOfVerificationCode.LOGIN,
+            })
+          }
+        }
+      }
       const device = await this.authRepository.createDevice({
         userId: user.id,
         userAgent: body.userAgent,
@@ -336,5 +369,53 @@ export class AuthService {
     await this.authRepository.updateUser({ id: user.id }, { totpSecret: secret })
     //4: trả về secret và uri
     return { secret, uri }
+  }
+  async disableTwoFactorAuth(data: DisableTwoFactorBodyType & { userId: number }) {
+    const { userId, code, totpCode } = data
+    const user = await this.shareUserRepository.findUnique({ id: userId })
+    if (!user) {
+      throw new UnprocessableEntityException([
+        {
+          message: 'User Không Tồn Tại',
+          path: 'id',
+        },
+      ])
+    }
+    if (!user.totpSecret) {
+      throw new UnprocessableEntityException([
+        {
+          message: 'User Chưa Bật 2FA',
+          path: 'id',
+        },
+      ])
+    }
+    //kiem tra ma totp co hop le khong
+    if (totpCode) {
+      const isValid = this.twoFactorAuthService.verifyToken({
+        email: user.email,
+        secret: user.totpSecret,
+        token: totpCode,
+      })
+      if (!isValid) {
+        throw new UnprocessableEntityException([
+          {
+            message: 'Mã TOTP Không Hợp Lệ',
+            path: 'totpCode',
+          },
+        ])
+      }
+    } else if (code) {
+      // kiểm tra code hợp lệ
+      await this.validateVerificationCode({
+        email: user.email,
+        code,
+        type: TypeOfVerificationCode.DISABLE_2FA,
+      })
+    }
+    // 4:cập nhập secret thành null
+    await this.authRepository.updateUser({ id: user.id }, { totpSecret: null })
+    return {
+      message: 'Disable 2FA Thành Công',
+    }
   }
 }
