@@ -2,7 +2,7 @@
 CREATE TYPE "public"."OrderStatus" AS ENUM ('PENDING_CONFIRMATION', 'PENDING_PICKUP', 'PENDING_DELIVERY', 'DELIVERED', 'RETURNED', 'CANCELLED');
 
 -- CreateEnum
-CREATE TYPE "public"."VerificationCodeType" AS ENUM ('REGISTER', 'FORGOT_PASSWORD');
+CREATE TYPE "public"."VerificationCodeType" AS ENUM ('REGISTER', 'FORGOT_PASSWORD', 'LOGIN', 'DISABLE_2FA');
 
 -- CreateEnum
 CREATE TYPE "public"."UserStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'BLOCKED');
@@ -12,9 +12,8 @@ CREATE TYPE "public"."HTTPMethod" AS ENUM ('GET', 'POST', 'PUT', 'DELETE', 'PATC
 
 -- CreateTable
 CREATE TABLE "public"."Language" (
-    "id" SERIAL NOT NULL,
+    "id" VARCHAR(10) NOT NULL,
     "name" VARCHAR(500) NOT NULL,
-    "code" VARCHAR(10) NOT NULL,
     "createdById" INTEGER,
     "updatedById" INTEGER,
     "deletedAt" TIMESTAMP(3),
@@ -48,7 +47,7 @@ CREATE TABLE "public"."User" (
 CREATE TABLE "public"."UserTranslation" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
-    "languageId" INTEGER NOT NULL,
+    "languageId" TEXT NOT NULL,
     "address" VARCHAR(500),
     "description" TEXT,
     "createdById" INTEGER,
@@ -145,7 +144,7 @@ CREATE TABLE "public"."Product" (
 CREATE TABLE "public"."ProductTranslation" (
     "id" SERIAL NOT NULL,
     "productId" INTEGER NOT NULL,
-    "languageId" INTEGER NOT NULL,
+    "languageId" TEXT NOT NULL,
     "name" VARCHAR(500) NOT NULL,
     "description" TEXT NOT NULL,
     "createdById" INTEGER,
@@ -174,7 +173,7 @@ CREATE TABLE "public"."Category" (
 CREATE TABLE "public"."CategoryTranslation" (
     "id" SERIAL NOT NULL,
     "categoryId" INTEGER NOT NULL,
-    "languageId" INTEGER NOT NULL,
+    "languageId" TEXT NOT NULL,
     "name" VARCHAR(500) NOT NULL,
     "description" TEXT NOT NULL,
     "createdById" INTEGER,
@@ -248,7 +247,7 @@ CREATE TABLE "public"."Brand" (
 CREATE TABLE "public"."BrandTranslation" (
     "id" SERIAL NOT NULL,
     "brandId" INTEGER NOT NULL,
-    "languageId" INTEGER NOT NULL,
+    "languageId" TEXT NOT NULL,
     "name" VARCHAR(500) NOT NULL,
     "description" TEXT NOT NULL,
     "createdById" INTEGER,
@@ -372,7 +371,7 @@ CREATE TABLE "public"."_SKUToVariantOption" (
 CREATE UNIQUE INDEX "Language_name_key" ON "public"."Language"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Language_code_key" ON "public"."Language"("code");
+CREATE INDEX "Language_deletedAt_idx" ON "public"."Language"("deletedAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "public"."User"("email");
@@ -381,19 +380,58 @@ CREATE UNIQUE INDEX "User_email_key" ON "public"."User"("email");
 CREATE UNIQUE INDEX "User_totpSecret_key" ON "public"."User"("totpSecret");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "VerificationCode_email_key" ON "public"."VerificationCode"("email");
+CREATE INDEX "User_deletedAt_idx" ON "public"."User"("deletedAt");
 
 -- CreateIndex
-CREATE INDEX "VerificationCode_email_code_type_idx" ON "public"."VerificationCode"("email", "code", "type");
+CREATE INDEX "UserTranslation_deletedAt_idx" ON "public"."UserTranslation"("deletedAt");
 
 -- CreateIndex
 CREATE INDEX "VerificationCode_expiresAt_idx" ON "public"."VerificationCode"("expiresAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "VerificationCode_email_code_type_key" ON "public"."VerificationCode"("email", "code", "type");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "RefreshToken_token_key" ON "public"."RefreshToken"("token");
 
 -- CreateIndex
 CREATE INDEX "RefreshToken_expiresAt_idx" ON "public"."RefreshToken"("expiresAt");
+
+-- CreateIndex
+CREATE INDEX "Permission_deletedAt_idx" ON "public"."Permission"("deletedAt");
+
+-- CreateIndex
+CREATE INDEX "Role_deletedAt_idx" ON "public"."Role"("deletedAt");
+
+-- CreateIndex
+CREATE INDEX "Product_deletedAt_idx" ON "public"."Product"("deletedAt");
+
+-- CreateIndex
+CREATE INDEX "ProductTranslation_deletedAt_idx" ON "public"."ProductTranslation"("deletedAt");
+
+-- CreateIndex
+CREATE INDEX "Category_deletedAt_idx" ON "public"."Category"("deletedAt");
+
+-- CreateIndex
+CREATE INDEX "CategoryTranslation_deletedAt_idx" ON "public"."CategoryTranslation"("deletedAt");
+
+-- CreateIndex
+CREATE INDEX "Variant_deletedAt_idx" ON "public"."Variant"("deletedAt");
+
+-- CreateIndex
+CREATE INDEX "VariantOption_deletedAt_idx" ON "public"."VariantOption"("deletedAt");
+
+-- CreateIndex
+CREATE INDEX "SKU_deletedAt_idx" ON "public"."SKU"("deletedAt");
+
+-- CreateIndex
+CREATE INDEX "Brand_deletedAt_idx" ON "public"."Brand"("deletedAt");
+
+-- CreateIndex
+CREATE INDEX "BrandTranslation_deletedAt_idx" ON "public"."BrandTranslation"("deletedAt");
+
+-- CreateIndex
+CREATE INDEX "Order_deletedAt_idx" ON "public"."Order"("deletedAt");
 
 -- CreateIndex
 CREATE INDEX "_PermissionToRole_B_index" ON "public"."_PermissionToRole"("B");
