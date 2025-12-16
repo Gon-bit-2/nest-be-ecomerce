@@ -1,12 +1,13 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common'
 import { Request } from 'express'
+import { AccessTokenPayload } from 'src/shared/types/jwt.type'
 import { TokenService } from 'src/shared/service/token.service'
 
 @Injectable()
 export class AccessTokenGuard implements CanActivate {
   constructor(private readonly tokenService: TokenService) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<Request>()
+    const request = context.switchToHttp().getRequest<Request & { user?: AccessTokenPayload }>()
     const token = request.headers.authorization?.split(' ')[1] // Assuming Bearer token format}
 
     if (!token) {
