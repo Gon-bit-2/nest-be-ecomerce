@@ -7,7 +7,17 @@ import roleName from 'src/shared/constants/role.constant'
 @Injectable()
 export class RoleService {
   constructor(private readonly roleRepo: RoleRepo) {}
+  private async verifyRole(roleId: number) {
+    const role = await this.roleRepo.findById(roleId)
+    if (!role) {
+      throw new NotFoundException('Role not found')
+    }
+    const baseRoles: string[] = [roleName.Admin, roleName.Client, roleName.Seller]
 
+    if (baseRoles.includes(role.name)) {
+      throw new ForbiddenException('You can not update this role')
+    }
+  }
   async list(pagination: GetRoleQueryType) {
     const data = await this.roleRepo.list(pagination)
     return data
@@ -21,7 +31,7 @@ export class RoleService {
     return role
   }
 
-  async create({ createdById, data }: { createdById: number | null; data: CreateRoleBodyType }) {
+  async create({ createdById, data }: { createdById: number; data: CreateRoleBodyType }) {
     try {
       const role = await this.roleRepo.create({
         createdById,
@@ -40,6 +50,7 @@ export class RoleService {
 
   async update({ updatedById, id, data }: { updatedById: number; id: number; data: UpdateRoleBodyType }) {
     try {
+      await this.verifyRole(updatedById)
       const role = await this.roleRepo.findById(id)
       if (!role) {
         throw new NotFoundException('Role not found')
@@ -70,6 +81,7 @@ export class RoleService {
       if ([roleName.Admin, roleName.Client, roleName.Seller].includes(role.name)) {
         throw new ForbiddenException('You can not delete this role')
       }
+      await this.verifyRole(deletedById)
       await this.roleRepo.delete({ id, deletedById }, isHard)
       return {
         message: 'Delete role successfully',
