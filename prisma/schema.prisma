@@ -8,7 +8,7 @@ datasource db {
 }
 
 model Language {
-  id                   String                   @id @db.VarChar(10)
+  id                   String                @id @db.VarChar(10)
   name                 String                @unique @db.VarChar(500)
   userTranslations     UserTranslation[]
   productTranslations  ProductTranslation[]
@@ -20,11 +20,11 @@ model Language {
   updatedById Int?
   updatedBy   User? @relation("LanguageUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  deletedAt DateTime?
+  deletedAt   DateTime?
   deletedById Int?
-  deletedBy   User? @relation("LanguageDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedBy   User?     @relation("LanguageDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([deletedAt])
 }
@@ -104,12 +104,13 @@ model User {
   updatedUsers User[] @relation("UpdatorUsers")
   deletedUsers User[] @relation("UserDeletedBy")
 
-  deletedAt DateTime?
+  deletedAt   DateTime?
   deletedById Int?
-  deletedBy   User? @relation("UserDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  Device    Device[]
+  deletedBy   User?     @relation("UserDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  Device      Device[]
+
   @@index([deletedAt])
 }
 
@@ -127,11 +128,11 @@ model UserTranslation {
   updatedById Int?
   updatedBy   User? @relation("UserTranslationUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  deletedAt DateTime?
+  deletedAt   DateTime?
   deletedById Int?
-  deletedBy   User? @relation("UserTranslationDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedBy   User?     @relation("UserTranslationDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([deletedAt])
 }
@@ -177,9 +178,10 @@ model RefreshToken {
 model Permission {
   id          Int        @id @default(autoincrement())
   name        String     @db.VarChar(500)
-  description String @default("")
+  description String     @default("")
   path        String     @db.VarChar(1000)
   method      HTTPMethod
+  module      String     @default("") @db.VarChar(500)
   roles       Role[]
 
   createdById Int?
@@ -187,11 +189,11 @@ model Permission {
   updatedById Int?
   updatedBy   User? @relation("PermissionUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  deletedAt DateTime?
+  deletedAt   DateTime?
   deletedById Int?
-  deletedBy   User? @relation("PermissionDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedBy   User?     @relation("PermissionDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([deletedAt])
 }
@@ -199,7 +201,7 @@ model Permission {
 model Role {
   id          Int          @id @default(autoincrement())
   name        String       @db.VarChar(500)
-  description String @default("")
+  description String       @default("")
   isActive    Boolean      @default(true)
   permissions Permission[]
   users       User[]
@@ -209,11 +211,11 @@ model Role {
   updatedById Int?
   updatedBy   User? @relation("RoleUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  deletedAt DateTime?
+  deletedAt   DateTime?
   deletedById Int?
-  deletedBy   User? @relation("RoleDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedBy   User?     @relation("RoleDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([deletedAt])
 }
@@ -236,11 +238,11 @@ model Product {
   updatedById Int?
   updatedBy   User? @relation("ProductUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  deletedAt DateTime?
+  deletedAt   DateTime?
   deletedById Int?
-  deletedBy   User? @relation("ProductDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedBy   User?     @relation("ProductDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([deletedAt])
 }
@@ -259,11 +261,11 @@ model ProductTranslation {
   updatedById Int?
   updatedBy   User? @relation("ProductTranslationUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  deletedAt DateTime?
+  deletedAt   DateTime?
   deletedById Int?
-  deletedBy   User? @relation("ProductTranslationDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedBy   User?     @relation("ProductTranslationDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([deletedAt])
 }
@@ -281,11 +283,11 @@ model Category {
   updatedById Int?
   updatedBy   User? @relation("CategoryUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  deletedAt DateTime?
+  deletedAt   DateTime?
   deletedById Int?
-  deletedBy   User? @relation("CategoryDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedBy   User?     @relation("CategoryDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([deletedAt])
 }
@@ -304,11 +306,11 @@ model CategoryTranslation {
   updatedById Int?
   updatedBy   User? @relation("CategoryTranslationUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  deletedAt DateTime?
+  deletedAt   DateTime?
   deletedById Int?
-  deletedBy   User? @relation("CategoryTranslationDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedBy   User?     @relation("CategoryTranslationDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([deletedAt])
 }
@@ -325,11 +327,11 @@ model Variant {
   updatedById Int?
   updatedBy   User? @relation("VariantUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  deletedAt DateTime?
+  deletedAt   DateTime?
   deletedById Int?
-  deletedBy   User? @relation("VariantDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedBy   User?     @relation("VariantDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([deletedAt])
 }
@@ -346,11 +348,11 @@ model VariantOption {
   updatedById Int?
   updatedBy   User? @relation("VariantOptionUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  deletedAt DateTime?
+  deletedAt   DateTime?
   deletedById Int?
-  deletedBy   User? @relation("VariantOptionDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedBy   User?     @relation("VariantOptionDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([deletedAt])
 }
@@ -372,11 +374,11 @@ model SKU {
   updatedById Int?
   updatedBy   User? @relation("SKUUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  deletedAt DateTime?
+  deletedAt   DateTime?
   deletedById Int?
-  deletedBy   User? @relation("SKUDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedBy   User?     @relation("SKUDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([deletedAt])
 }
@@ -392,11 +394,11 @@ model Brand {
   updatedById Int?
   updatedBy   User? @relation("BrandUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  deletedAt DateTime?
+  deletedAt   DateTime?
   deletedById Int?
-  deletedBy   User? @relation("BrandDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedBy   User?     @relation("BrandDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([deletedAt])
 }
@@ -415,11 +417,11 @@ model BrandTranslation {
   updatedById Int?
   updatedBy   User? @relation("BrandTranslationUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  deletedAt DateTime?
+  deletedAt   DateTime?
   deletedById Int?
-  deletedBy   User? @relation("BrandTranslationDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedBy   User?     @relation("BrandTranslationDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([deletedAt])
 }
@@ -462,11 +464,11 @@ model Order {
   updatedById Int?
   updatedBy   User? @relation("OrderUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  deletedAt DateTime?
+  deletedAt   DateTime?
   deletedById Int?
-  deletedBy   User? @relation("OrderDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedBy   User?     @relation("OrderDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([deletedAt])
 }

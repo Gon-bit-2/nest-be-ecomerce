@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import { RoleRepo } from './role.repo'
 import { CreateRoleBodyType, GetRoleQueryType, UpdateRoleBodyType } from './role.model'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
+import roleName from 'src/shared/constants/role.constant'
 
 @Injectable()
 export class RoleService {
@@ -39,8 +40,16 @@ export class RoleService {
 
   async update({ updatedById, id, data }: { updatedById: number; id: number; data: UpdateRoleBodyType }) {
     try {
-      const role = await this.roleRepo.update({ updatedById, id, data })
-      return role
+      const role = await this.roleRepo.findById(id)
+      if (!role) {
+        throw new NotFoundException('Role not found')
+      }
+      //không cho phép bất kì ai cập nhập role Admin
+      if (role.name === roleName.Admin) {
+        throw new ForbiddenException('You can not update this role')
+      }
+      const updatedRole = await this.roleRepo.update({ updatedById, id, data })
+      return updatedRole
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {
@@ -53,6 +62,14 @@ export class RoleService {
 
   async delete({ id, deletedById }: { id: number; deletedById: number }, isHard?: boolean) {
     try {
+      const role = await this.roleRepo.findById(id)
+      if (!role) {
+        throw new NotFoundException('Role not found')
+      }
+      //không cho phép bất kì ai xóa 3 role cơ bản
+      if ([roleName.Admin, roleName.Client, roleName.Seller].includes(role.name)) {
+        throw new ForbiddenException('You can not delete this role')
+      }
       await this.roleRepo.delete({ id, deletedById }, isHard)
       return {
         message: 'Delete role successfully',

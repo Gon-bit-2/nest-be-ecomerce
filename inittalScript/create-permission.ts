@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 // Source - https://stackoverflow.com/a/63333671
 // Posted by oviniciusfeitosa, modified by community. See post 'Timeline' for change history
 // Retrieved 2025-12-16, License - CC BY-SA 4.0
@@ -11,31 +13,30 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule)
   await app.listen(3000)
   const server = app.getHttpAdapter().getInstance()
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
   const router = server.router
   const permissionInDb = await prisma.permission.findMany({
     where: {
       deletedAt: null,
     },
   })
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-  const availableRoutes: { path: string; method: keyof typeof HTTPMethod; name: string }[] = router.stack
-    .map((layer) => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      const path = layer.route?.path
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-      const method = layer.route?.stack[0].method.toUpperCase() as keyof typeof HTTPMethod
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (layer.route) {
-        return {
-          path,
-          method,
-          name: `${method} ${path}`,
+  const availableRoutes: { path: string; method: keyof typeof HTTPMethod; name: string; module: string }[] =
+    router.stack
+      .map((layer) => {
+        if (layer.route) {
+          const path = layer.route.path
+          const method = layer.route.stack[0].method.toUpperCase() as keyof typeof HTTPMethod
+          const moduleName = path.split('/')[1]
+          return {
+            path,
+            method,
+            name: `${method} ${path}`,
+            module: moduleName,
+          }
         }
-      }
-    })
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    .filter((item) => item !== undefined)
+      })
+
+      .filter((item) => item !== undefined)
   console.log(availableRoutes)
 
   //tạo obj permissionInDbMap với key là [method-path]
