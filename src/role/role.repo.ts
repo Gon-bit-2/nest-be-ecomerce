@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/shared/service/prisma.service'
 import { CreateRoleBodyType, GetRoleQueryType, UpdateRoleBodyType } from './role.model'
 
@@ -38,7 +38,11 @@ export class RoleRepo {
         id,
       },
       include: {
-        permissions: true,
+        permissions: {
+          where: {
+            deletedAt: null,
+          },
+        },
       },
     })
   }
@@ -50,8 +54,23 @@ export class RoleRepo {
       },
     })
   }
-  update({ updatedById, id, data }: { updatedById: number; id: number; data: UpdateRoleBodyType }) {
-    return this.prismaService.role.update({
+  async update({ updatedById, id, data }: { updatedById: number; id: number; data: UpdateRoleBodyType }) {
+    //kiểm tra nếu có permission Id mà đã soft delete thì không cho cập nhập
+    if (data.permissionIds.length > 0) {
+      const permissionIds = await this.prismaService.permission.findMany({
+        where: {
+          id: {
+            in: data.permissionIds,
+          },
+        },
+      })
+      const deletedPermissionIds = permissionIds.filter((permission) => permission.deletedAt)
+      if (deletedPermissionIds.length > 0) {
+        const deletedIds = deletedPermissionIds.map((permission) => permission.id).join(', ')
+        throw new BadRequestException(`Permission with id has been deleted: ${deletedIds}`)
+      }
+    }
+    return await this.prismaService.role.update({
       where: {
         id,
         deletedAt: null,
@@ -66,7 +85,11 @@ export class RoleRepo {
         updatedById,
       },
       include: {
-        permissions: true,
+        permissions: {
+          where: {
+            deletedAt: null,
+          },
+        },
       },
     })
   }
