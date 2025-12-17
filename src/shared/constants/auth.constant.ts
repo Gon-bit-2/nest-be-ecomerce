@@ -1,4 +1,4 @@
-export const REQUEST_USER_KET = 'user'
+export const REQUEST_USER_KEY = 'user'
 export const AuthType = {
   Bearer: 'Bearer',
   None: 'None',
