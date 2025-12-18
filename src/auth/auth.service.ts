@@ -90,7 +90,7 @@ export class AuthService {
 
   async sendOTP(body: SendOTPBodyType) {
     //1:check email exists
-    const user = await this.shareUserRepository.findUnique({ email: body.email })
+    const user = await this.shareUserRepository.findUnique({ email: body.email, deletedAt: null })
     if (body.type === TypeOfVerificationCode.REGISTER && user) {
       throw new UnprocessableEntityException([
         {
@@ -311,7 +311,7 @@ export class AuthService {
   async forgotPassword(body: ForgotPasswordBodyType) {
     const { email, code, newPassword } = body
     //1: check email exists
-    const user = await this.shareUserRepository.findUnique({ email })
+    const user = await this.shareUserRepository.findUnique({ email, deletedAt: null })
     if (!user) {
       throw new UnprocessableEntityException([
         {
@@ -331,7 +331,10 @@ export class AuthService {
 
     //việc update and delete không phụ thuộc nhau => promise all
     await Promise.all([
-      this.authRepository.updateUser({ id: user.id }, { password: hashedPassword }),
+      this.shareUserRepository.update(
+        { id: user.id, deletedAt: null },
+        { password: hashedPassword, updatedById: user.id },
+      ),
       this.verificationCodeRepository.deleteVerificationCode({
         email_code_type: {
           email: body.email,
@@ -344,9 +347,9 @@ export class AuthService {
       message: 'Đổi Mật Khẩu Thành Công',
     }
   }
-  async twoFactorAuth(userid: number) {
+  async twoFactorAuth(userId: number) {
     //1: lấy user xem đã có 2fa chưa
-    const user = await this.shareUserRepository.findUnique({ id: userid })
+    const user = await this.shareUserRepository.findUnique({ id: userId, deletedAt: null })
     if (!user) {
       throw new UnprocessableEntityException([
         {
@@ -366,13 +369,13 @@ export class AuthService {
     //2: tạo secret và uri
     const { secret, uri } = this.twoFactorAuthService.generateSecret(user.email)
     //3: cập nhập secret và user trong db
-    await this.authRepository.updateUser({ id: user.id }, { totpSecret: secret })
+    await this.shareUserRepository.update({ id: user.id, deletedAt: null }, { totpSecret: secret, updatedById: userId })
     //4: trả về secret và uri
     return { secret, uri }
   }
   async disableTwoFactorAuth(data: DisableTwoFactorBodyType & { userId: number }) {
     const { userId, code, totpCode } = data
-    const user = await this.shareUserRepository.findUnique({ id: userId })
+    const user = await this.shareUserRepository.findUnique({ id: userId, deletedAt: null })
     if (!user) {
       throw new UnprocessableEntityException([
         {
@@ -413,7 +416,7 @@ export class AuthService {
       })
     }
     // 4:cập nhập secret thành null
-    await this.authRepository.updateUser({ id: user.id }, { totpSecret: null })
+    await this.shareUserRepository.update({ id: user.id, deletedAt: null }, { totpSecret: null, updatedById: userId })
     return {
       message: 'Disable 2FA Thành Công',
     }

@@ -11,9 +11,10 @@ import { AuthenticationGuard } from 'src/shared/guard/authentication.guard'
 import { LanguageModule } from './language/language.module'
 import { PermissionModule } from './permission/permission.module';
 import { RoleModule } from './role/role.module';
+import { ProfileModule } from './profile/profile.module';
 
 @Module({
-  imports: [SharedModule, AuthModule, LanguageModule, PermissionModule, RoleModule],
+  imports: [SharedModule, AuthModule, LanguageModule, PermissionModule, RoleModule, ProfileModule],
   controllers: [AppController],
   providers: [
     AppService,

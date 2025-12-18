@@ -21,5 +21,6 @@ export const PermissionSchema = z.object({
   updatedById: z.number().nullable(),
   updatedAt: z.date(),
   deletedById: z.number().nullable(),
-  deletedAt: z.date(),
+  deletedAt: z.date().nullable(),
 })
+export type PermissionType = z.infer<typeof PermissionSchema>

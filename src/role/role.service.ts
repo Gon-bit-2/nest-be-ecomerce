@@ -50,6 +50,7 @@ export class RoleService {
 
   async update({ updatedById, id, data }: { updatedById: number; id: number; data: UpdateRoleBodyType }) {
     try {
+      //kiểm tra người cập nhật có quyền không
       await this.verifyRole(updatedById)
       const role = await this.roleRepo.findById(id)
       if (!role) {
@@ -62,10 +63,8 @@ export class RoleService {
       const updatedRole = await this.roleRepo.update({ updatedById, id, data })
       return updatedRole
     } catch (error) {
-      if (error instanceof PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          throw new NotFoundException('Role not found')
-        }
+      if (error instanceof Error) {
+        throw new ForbiddenException(error.message)
       }
       throw error
     }
@@ -81,6 +80,7 @@ export class RoleService {
       if ([roleName.Admin, roleName.Client, roleName.Seller].includes(role.name)) {
         throw new ForbiddenException('You can not delete this role')
       }
+      //kiểm tra người xóa có quyền không
       await this.verifyRole(deletedById)
       await this.roleRepo.delete({ id, deletedById }, isHard)
       return {
