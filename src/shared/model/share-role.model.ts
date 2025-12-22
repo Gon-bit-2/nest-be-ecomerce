@@ -1,4 +1,5 @@
 import z from 'zod'
+import { PermissionSchema } from './share-permission.model'
 
 export const RoleSchema = z.object({
   id: z.number(),
@@ -12,4 +13,8 @@ export const RoleSchema = z.object({
   updatedAt: z.date(),
   deletedAt: z.date().nullable(),
 })
+export const RolePermissionSchema = RoleSchema.extend({
+  permissions: z.array(PermissionSchema),
+})
 export type RoleType = z.infer<typeof RoleSchema>
+export type RolePermissionType = z.infer<typeof RolePermissionSchema>

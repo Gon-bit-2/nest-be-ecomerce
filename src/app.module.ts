@@ -9,12 +9,13 @@ import CustomZodValidationPipe from 'src/pipes/custom-zod-validation.pipe'
 import { HttpExceptionFilter } from 'src/filter/http-exception.filter'
 import { AuthenticationGuard } from 'src/shared/guard/authentication.guard'
 import { LanguageModule } from './language/language.module'
-import { PermissionModule } from './permission/permission.module';
-import { RoleModule } from './role/role.module';
-import { ProfileModule } from './profile/profile.module';
+import { PermissionModule } from './permission/permission.module'
+import { RoleModule } from './role/role.module'
+import { ProfileModule } from './profile/profile.module'
+import { UserModule } from './user/user.module'
 
 @Module({
-  imports: [SharedModule, AuthModule, LanguageModule, PermissionModule, RoleModule, ProfileModule],
+  imports: [SharedModule, AuthModule, LanguageModule, PermissionModule, RoleModule, ProfileModule, UserModule],
   controllers: [AppController],
   providers: [
     AppService,

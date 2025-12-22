@@ -6,6 +6,7 @@ import { TokenService } from 'src/shared/service/token.service'
 import { REQUEST_USER_KEY } from '../decorators/custom-validator.decorator'
 import { PrismaService } from '../service/prisma.service'
 import { HTTPMethod } from '../constants/role.constant'
+import { REQUEST_ROLE_PERMISSIONS } from '../constants/auth.constant'
 @Injectable()
 export class AccessTokenGuard implements CanActivate {
   constructor(
@@ -69,5 +70,6 @@ export class AccessTokenGuard implements CanActivate {
     if (!canAccess) {
       throw new ForbiddenException('Error.Forbidden')
     }
+    request[REQUEST_ROLE_PERMISSIONS] = role.permissions
   }
 }

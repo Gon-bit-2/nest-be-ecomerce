@@ -13,7 +13,7 @@ export type UserIncludeRolePermissionType = UserType & {
 @Injectable()
 export class ShareUserRepository {
   constructor(private readonly prismaService: PrismaService) {}
-  async findUnique(uniqueObject: WhereUniqueUserType): Promise<UserType | null> {
+  async findUnique(uniqueObject: WhereUniqueUserType) {
     return await this.prismaService.user.findUnique({ where: uniqueObject })
   }
   async findUniqueIncludeRolePermissions(where: WhereUniqueUserType): Promise<UserIncludeRolePermissionType | null> {
