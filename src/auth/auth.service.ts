@@ -16,7 +16,6 @@ import {
 } from 'src/auth/auth.model'
 import { AuthRepository } from 'src/auth/repository/auth.repository'
 import { VerificationCodeRepository } from 'src/auth/repository/verificationCode.repo'
-import { RolesService } from 'src/auth/roles.service'
 import { generateOTP } from 'src/shared/helpers'
 import { ShareUserRepository } from 'src/shared/repositories/shared-user.repo'
 import { HashingService } from 'src/shared/service/hashing.service'
@@ -27,10 +26,11 @@ import { EmailService } from 'src/shared/service/email.service'
 import { TokenService } from 'src/shared/service/token.service'
 import { IAccessTokenPayload } from 'src/shared/types/jwt.type'
 import { TwoFactorAuthService } from 'src/shared/service/2fa.service'
+import { SharedRoleRepository } from 'src/shared/repositories/shared-role.repo'
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly rolesService: RolesService,
+    private readonly sharedRoleRepository: SharedRoleRepository,
     private readonly emailService: EmailService,
     private readonly tokenService: TokenService,
     private readonly hashingService: HashingService,
@@ -62,7 +62,7 @@ export class AuthService {
           path: 'code',
         })
       }
-      const clientRoleId = await this.rolesService.getClientRoleId()
+      const clientRoleId = await this.sharedRoleRepository.getClientRoleId()
       const hashedPassword = await this.hashingService.hash(body.password)
       const [user] = await Promise.all([
         this.authRepository.createUser({

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
-import { DeviceType, RoleType } from 'src/auth/auth.model'
+import { DeviceType } from 'src/auth/auth.model'
 import { TypeOfVerificationCodeType } from 'src/shared/constants/auth.constant'
+import { RoleType } from 'src/shared/model/share-role.model'
 import { UserType } from 'src/shared/model/shared-user.model'
 import { WhereUniqueUserType } from 'src/shared/repositories/shared-user.repo'
 import { PrismaService } from 'src/shared/service/prisma.service'

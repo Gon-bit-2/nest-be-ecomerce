@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/shared/service/prisma.service'
 import { CreateRoleBodyType, GetRoleQueryType, UpdateRoleBodyType } from './role.model'
+import { RoleType } from 'src/shared/model/share-role.model'
 
 @Injectable()
 export class RoleRepo {
@@ -46,7 +47,7 @@ export class RoleRepo {
       },
     })
   }
-  create({ createdById, data }: { createdById: number | null; data: CreateRoleBodyType }) {
+  create({ createdById, data }: { createdById: number | null; data: CreateRoleBodyType }): Promise<RoleType> {
     return this.prismaService.role.create({
       data: {
         ...data,
