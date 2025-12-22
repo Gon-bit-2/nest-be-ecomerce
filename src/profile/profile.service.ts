@@ -12,23 +12,23 @@ export class ProfileService {
     private readonly hashingService: HashingService,
   ) {}
   async getProfile(userId: number) {
-    const user = await this.shareUserRepository.findUniqueIncludeRolePermissions({ id: userId, deletedAt: null })
+    const user = await this.shareUserRepository.findUniqueIncludeRolePermissions({ id: userId })
     if (!user) {
       throw NotFoundRecordException
     }
     return user
   }
   async updateProfile({ userId, body }: { userId: number; body: UpdateMeBodyType }) {
-    const user = await this.shareUserRepository.findUnique({ id: userId, deletedAt: null })
+    const user = await this.shareUserRepository.findUnique({ id: userId })
     if (!user) {
       throw NotFoundRecordException
     }
-    const updateUser = await this.shareUserRepository.update({ id: userId, deletedAt: null }, body)
+    const updateUser = await this.shareUserRepository.update({ id: userId }, body)
     return updateUser
   }
   async changePassword({ userId, body }: { userId: number; body: Omit<ChangePasswordBodyType, 'confirmPassword'> }) {
     try {
-      const user = await this.shareUserRepository.findUnique({ id: userId, deletedAt: null })
+      const user = await this.shareUserRepository.findUnique({ id: userId })
       if (!user) {
         throw NotFoundRecordException
       }
@@ -37,10 +37,7 @@ export class ProfileService {
         throw new BadRequestException('Old password is not correct')
       }
       const hashedPassword = await this.hashingService.hash(body.newPassword)
-      await this.shareUserRepository.update(
-        { id: userId, deletedAt: null },
-        { password: hashedPassword, updatedById: userId },
-      )
+      await this.shareUserRepository.update({ id: userId }, { password: hashedPassword, updatedById: userId })
       return {
         message: 'Change password successfully',
       }

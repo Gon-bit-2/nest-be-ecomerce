@@ -23,7 +23,6 @@ export class UserService {
   }
   async findById(id: number) {
     const user = await this.shareUserRepository.findUniqueIncludeRolePermissions({
-      deletedAt: null,
       id,
     })
     if (!user) {
@@ -83,13 +82,7 @@ export class UserService {
       if (id === updatedById) {
         throw CannotUpdateOrDeleteYourselfException
       }
-      const currentUser = await this.shareUserRepository.findUnique({
-        id,
-        deletedAt: null,
-      })
-      if (!currentUser) {
-        throw NotFoundRecordException
-      }
+      const currentUser = await this.getRoleIdByUserId(id)
       //lấy roleId ban đầu của người được update để thực hiện kiểm tra xam liệu người update có quyền update hay không
       const roleIdTarget = currentUser.id
       await this.verifyRole({
@@ -99,7 +92,6 @@ export class UserService {
       const updateUser = await this.shareUserRepository.update(
         {
           id,
-          deletedAt: null,
         },
         {
           ...data,
@@ -126,13 +118,7 @@ export class UserService {
       if (userId === deletedById) {
         throw CannotUpdateOrDeleteYourselfException
       }
-      const currentUser = await this.shareUserRepository.findUnique({
-        id: userId,
-        deletedAt: null,
-      })
-      if (!currentUser) {
-        throw NotFoundRecordException
-      }
+      const currentUser = await this.getRoleIdByUserId(userId)
       //lấy roleId ban đầu của người được update để thực hiện kiểm tra xam liệu người update có quyền update hay không
       const roleIdTarget = currentUser.id
       await this.verifyRole({
@@ -162,5 +148,14 @@ export class UserService {
       }
       return true
     }
+  }
+  private async getRoleIdByUserId(userId: number) {
+    const currentUser = await this.shareUserRepository.findUnique({
+      id: userId,
+    })
+    if (!currentUser) {
+      throw NotFoundRecordException
+    }
+    return currentUser
   }
 }
