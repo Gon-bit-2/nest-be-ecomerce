@@ -8,12 +8,14 @@ import { EmailService } from 'src/shared/service/email.service'
 import { AccessTokenGuard } from 'src/shared/guard/access-token.guard'
 import { XApiKeyGuard } from 'src/shared/guard/x-api-key.guard'
 import { TwoFactorAuthService } from './service/2fa.service'
+import { S3Service } from 'src/shared/service/s3.service'
 @Global()
 @Module({
   providers: [
     PrismaService,
     HashingService,
     TokenService,
+    S3Service,
     TwoFactorAuthService,
     ShareUserRepository,
     EmailService,
@@ -24,6 +26,7 @@ import { TwoFactorAuthService } from './service/2fa.service'
     PrismaService,
     HashingService,
     TokenService,
+    S3Service,
     TwoFactorAuthService,
     ShareUserRepository,
     EmailService,
