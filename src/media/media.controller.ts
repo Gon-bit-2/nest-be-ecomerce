@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
 import {
   Controller,
   Post,
@@ -12,21 +13,23 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { MediaService } from './media.service'
-
 import { FilesInterceptor } from '@nestjs/platform-express'
-import envConfig from 'src/shared/config'
 import { isPublic } from 'src/shared/decorators/auth.decorator'
 import { type Response } from 'express'
 import { UPLOAD_DIR } from 'src/shared/constants/other.constant'
 import path from 'path'
+import { S3Service } from 'src/shared/service/s3.service'
 
 @Controller('media')
 export class MediaController {
-  constructor(private readonly mediaService: MediaService) {}
+  constructor(
+    private readonly mediaService: MediaService,
+    private readonly s3Service: S3Service,
+  ) {}
 
   @Post('images/upload')
   @UseInterceptors(FilesInterceptor('file', 100))
-  uploadFile(
+  async uploadFile(
     @UploadedFiles(
       new ParseFilePipe({
         validators: [
@@ -40,9 +43,8 @@ export class MediaController {
     files: Array<Express.Multer.File>,
   ) {
     console.log(files)
-    return files.map((file) => ({
-      url: `${envConfig.PREFIX_STATIC_ENDPOINT}/${file.filename}`,
-    }))
+    const result = await this.mediaService.uploadFile(files)
+    return result
   }
   @Get('static/:filename')
   @isPublic()

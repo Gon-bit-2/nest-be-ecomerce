@@ -1,26 +1,36 @@
-import { Injectable } from '@nestjs/common';
-import { CreateMediaDto } from './dto/create-media.dto';
-import { UpdateMediaDto } from './dto/update-media.dto';
+import { Injectable } from '@nestjs/common'
+import { unlink } from 'fs'
+import { S3Service } from 'src/shared/service/s3.service'
 
 @Injectable()
 export class MediaService {
-  create(createMediaDto: CreateMediaDto) {
-    return 'This action adds a new media';
-  }
-
-  findAll() {
-    return `This action returns all media`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} media`;
-  }
-
-  update(id: number, updateMediaDto: UpdateMediaDto) {
-    return `This action updates a #${id} media`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} media`;
+  constructor(private readonly s3Service: S3Service) {}
+  async uploadFile(files: Array<Express.Multer.File>) {
+    const result = await Promise.all(
+      files.map((file) => {
+        return this.s3Service
+          .uploadFile({
+            fileName: 'images/' + file.filename,
+            filePath: file.path,
+            contentType: file.mimetype,
+          })
+          .then((res) => {
+            return {
+              url: res.Location,
+            }
+          })
+      }),
+    )
+    //sau khi upload xong lên S3 xoa file trong upload folder
+    await Promise.all(
+      files.map((file) => {
+        return unlink(file.path, (err) => {
+          if (err) {
+            console.error('Error deleting file:', err)
+          }
+        })
+      }),
+    )
+    return result
   }
 }
