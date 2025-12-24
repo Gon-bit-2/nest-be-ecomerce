@@ -3,7 +3,6 @@ import {
   Controller,
   Post,
   UseInterceptors,
-  ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
   UploadedFiles,
@@ -11,6 +10,7 @@ import {
   Param,
   Res,
   NotFoundException,
+  Body,
 } from '@nestjs/common'
 import { MediaService } from './media.service'
 import { FilesInterceptor } from '@nestjs/platform-express'
@@ -19,6 +19,9 @@ import { type Response } from 'express'
 import { UPLOAD_DIR } from 'src/shared/constants/other.constant'
 import path from 'path'
 import { S3Service } from 'src/shared/service/s3.service'
+import { ParseFilePipeWithUnlink } from 'src/media/parse-file-pipe-with-unlink.pipe'
+import { ZodSerializerDto } from 'nestjs-zod'
+import { PresignedUploadFileBodyDTO, PresignedUploadFileResDTO } from 'src/media/dto/media.dto'
 
 @Controller('media')
 export class MediaController {
@@ -28,10 +31,11 @@ export class MediaController {
   ) {}
 
   @Post('images/upload')
+  @ZodSerializerDto(PresignedUploadFileResDTO)
   @UseInterceptors(FilesInterceptor('file', 100))
   async uploadFile(
     @UploadedFiles(
-      new ParseFilePipe({
+      new ParseFilePipeWithUnlink({
         validators: [
           new MaxFileSizeValidator({
             maxSize: 1024 * 1024 * 5,
@@ -55,5 +59,11 @@ export class MediaController {
         res.status(notFound.getStatus()).json(notFound.getResponse())
       }
     })
+  }
+  @Post('images/upload/presigned-url')
+  @ZodSerializerDto(PresignedUploadFileResDTO)
+  @isPublic()
+  async getPresignedUrl(@Body() body: PresignedUploadFileBodyDTO) {
+    return this.mediaService.getPresignedUrl(body)
   }
 }

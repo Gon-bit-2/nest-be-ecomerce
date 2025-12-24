@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common'
-import { S3 } from '@aws-sdk/client-s3'
+import { PutObjectCommand, S3 } from '@aws-sdk/client-s3'
 import envConfig from 'src/shared/config'
 import { Upload } from '@aws-sdk/lib-storage'
 import { readFileSync } from 'fs'
+import mime from 'mime-types'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 @Injectable()
 export class S3Service {
   // Implement S3 related methods here
@@ -50,5 +52,14 @@ export class S3Service {
     })
 
     return parallelUploads3.done()
+  }
+  createPresignedUrlWithClient(fileName: string) {
+    const contentType = mime.lookup(fileName) || 'application/octet-stream'
+    const command = new PutObjectCommand({
+      Bucket: envConfig.S3_BUCKET_NAME,
+      Key: fileName,
+      ContentType: contentType,
+    })
+    return getSignedUrl(this.s3, command, { expiresIn: 3600 }) // URL hợp lệ trong 1 giờ
   }
 }
