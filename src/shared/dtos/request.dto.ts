@@ -1,4 +1,5 @@
 import { createZodDto } from 'nestjs-zod'
-import { EmptyBodySchema } from '../model/request.model'
+import { EmptyBodySchema, PaginationQuerySchema } from '../model/request.model'
 
 export class EmptyBodyDTO extends createZodDto(EmptyBodySchema) {}
+export class PaginationQueryDTO extends createZodDto(PaginationQuerySchema) {}

@@ -14,6 +14,8 @@ import { RoleModule } from './role/role.module'
 import { ProfileModule } from './profile/profile.module'
 import { UserModule } from './user/user.module'
 import { MediaModule } from './media/media.module'
+import { BrandModule } from './brand/brand.module'
+import { BrandTranslationModule } from 'src/brand/brand-translation/brand-translation.module'
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { MediaModule } from './media/media.module'
     ProfileModule,
     UserModule,
     MediaModule,
+    BrandModule,
+    BrandTranslationModule,
   ],
   controllers: [AppController],
   providers: [
