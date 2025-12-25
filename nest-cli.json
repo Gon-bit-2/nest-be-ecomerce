@@ -6,7 +6,8 @@
     "deleteOutDir": true,
     "builder": "webpack",
     "strictNullChecks": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "assets": [{ "include": "i18n/**/*", "watchAssets": true }]
   },
   "generateOptions": {
     "spec": false

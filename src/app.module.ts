@@ -16,7 +16,8 @@ import { UserModule } from './user/user.module'
 import { MediaModule } from './media/media.module'
 import { BrandModule } from './brand/brand.module'
 import { BrandTranslationModule } from 'src/brand/brand-translation/brand-translation.module'
-
+import * as path from 'path'
+import { AcceptLanguageResolver, I18nModule, QueryResolver } from 'nestjs-i18n'
 @Module({
   imports: [
     SharedModule,
@@ -29,6 +30,15 @@ import { BrandTranslationModule } from 'src/brand/brand-translation/brand-transl
     MediaModule,
     BrandModule,
     BrandTranslationModule,
+    I18nModule.forRoot({
+      fallbackLanguage: 'en',
+      loaderOptions: {
+        path: path.resolve('src/i18n/'),
+        watch: true,
+      },
+      resolvers: [{ use: QueryResolver, options: ['lang'] }, AcceptLanguageResolver],
+      typesOutputPath: path.resolve('src/generated/i18n.generated.ts'),
+    }),
   ],
   controllers: [AppController],
   providers: [
