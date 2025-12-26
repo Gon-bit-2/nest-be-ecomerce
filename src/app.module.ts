@@ -18,6 +18,7 @@ import { BrandModule } from './brand/brand.module'
 import { BrandTranslationModule } from 'src/brand/brand-translation/brand-translation.module'
 import * as path from 'path'
 import { AcceptLanguageResolver, I18nModule, QueryResolver } from 'nestjs-i18n'
+import { CategoryModule } from './category/category.module'
 @Module({
   imports: [
     SharedModule,
@@ -39,6 +40,7 @@ import { AcceptLanguageResolver, I18nModule, QueryResolver } from 'nestjs-i18n'
       resolvers: [{ use: QueryResolver, options: ['lang'] }, AcceptLanguageResolver],
       typesOutputPath: path.resolve('src/generated/i18n.generated.ts'),
     }),
+    CategoryModule,
   ],
   controllers: [AppController],
   providers: [

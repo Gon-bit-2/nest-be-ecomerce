@@ -335,6 +335,161 @@ _No Body_
 
 ---
 
+## Brand Module
+
+### List Brands
+
+**GET** `/brand?page=1&limit=10`
+_No Body_
+
+### Get Brand Detail
+
+**GET** `/brand/:id`
+_No Body_
+
+### Create Brand
+
+**POST** `/brand`
+
+```json
+{
+  "name": "Brand Name",
+  "logo": "https://example.com/logo.png"
+}
+```
+
+### Update Brand
+
+**PUT** `/brand/:id`
+
+```json
+{
+  "name": "Brand Name",
+  "logo": "https://example.com/logo.png"
+}
+```
+
+### Delete Brand
+
+**DELETE** `/brand/:id`
+_No Body_
+
+---
+
+## Brand Translation Module
+
+### Get Brand Translation Detail
+
+**GET** `/brand-translation`
+_Params_: `brandTranslationId` (Query or Param depending on implementation, likely Query currently)
+
+### Create Brand Translation
+
+**POST** `/brand-translation`
+
+```json
+{
+  "brandId": 1,
+  "languageId": "vi",
+  "name": "Tên Thương Hiệu",
+  "description": "Mô tả chi tiết"
+}
+```
+
+### Update Brand Translation
+
+**PUT** `/brand-translation/:brandTranslationId`
+
+```json
+{
+  "brandId": 1,
+  "languageId": "vi",
+  "name": "Tên Thương Hiệu",
+  "description": "Mô tả chi tiết"
+}
+```
+
+### Delete Brand Translation
+
+**DELETE** `/brand-translation/:brandTranslationId`
+_No Body_
+
+---
+
+## Category Module
+
+### List Categories
+
+**GET** `/category`
+_No Body_
+
+### Get Category Detail
+
+**GET** `/category/:id`
+_No Body_
+
+### Create Category
+
+**POST** `/category`
+
+```json
+{
+  "name": "Category Name"
+}
+```
+
+### Update Category
+
+**PATCH** `/category/:id`
+
+```json
+{
+  "name": "Category Name"
+}
+```
+
+### Delete Category
+
+**DELETE** `/category/:id`
+_No Body_
+
+---
+
+## Category Translation Module
+
+### List Category Translations
+
+**GET** `/category-transaliton`
+_No Body_
+
+### Get Category Translation Detail
+
+**GET** `/category-transaliton/:id`
+_No Body_
+
+### Create Category Translation
+
+**POST** `/category-transaliton`
+
+```json
+{}
+```
+
+### Update Category Translation
+
+**PATCH** `/category-transaliton/:id`
+
+```json
+{}
+```
+
+### Delete Category Translation
+
+**DELETE** `/category-transaliton/:id`
+_No Body_
+
+---
+
 ## App
 
 **GET** `/`
