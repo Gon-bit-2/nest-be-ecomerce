@@ -16,7 +16,7 @@ export const CategorySchema = z.object({
   deletedAt: z.date().nullable(),
 })
 
-const CategoryIncludeTranslationSchema = CategorySchema.extend({
+export const CategoryIncludeTranslationSchema = CategorySchema.extend({
   categoryTranslations: z.array(CategoryTranslationSchema),
 })
 export const GetAllCategoriesResSchema = z.object({
