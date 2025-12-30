@@ -8,6 +8,9 @@ import { NestFactory } from '@nestjs/core'
 import { AppModule } from 'src/app.module'
 import { PrismaService } from 'src/shared/service/prisma.service'
 import roleName, { HTTPMethod } from 'src/shared/constants/role.constant'
+
+const SellerModule = ['AUTH', 'MEDIA', 'MANAGE-PRODUCT', 'PRODUCT-TRANSLATION', 'PROFILE']
+
 const prisma = new PrismaService()
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
@@ -26,7 +29,7 @@ async function bootstrap() {
         if (layer.route) {
           const path = layer.route.path
           const method = layer.route.stack[0].method.toUpperCase() as keyof typeof HTTPMethod
-          const moduleName = path.split('/')[1]
+          const moduleName = path.split('/')[1].toUpperCase()
           return {
             path,
             method,
@@ -86,26 +89,35 @@ async function bootstrap() {
       deletedAt: null,
     },
   })
+  const adminPermissionIds = updatedPermissionInDb.map((item) => ({
+    id: item.id,
+  }))
+  // Lọc danh sách các quyền (permissions) từ database dựa trên các module được phép truy cập đã định nghĩa trong SellerModule
+  const sellerPermissionIds = updatedPermissionInDb
+    .filter((item) => SellerModule.includes(item.module))
+    .map((item) => ({ id: item.id }))
 
+  await updateRole(adminPermissionIds, roleName.Admin)
+  await updateRole(sellerPermissionIds, roleName.Seller)
+  process.exit(0)
+}
+const updateRole = async (permissionIds: { id: number }[], roleName: string) => {
   //cập nhập permission trong admin role
-  const adminRole = await prisma.role.findFirstOrThrow({
+  const role = await prisma.role.findFirstOrThrow({
     where: {
-      name: roleName.Admin,
+      name: roleName,
       deletedAt: null,
     },
   })
   await prisma.role.update({
     where: {
-      id: adminRole.id,
+      id: role.id,
     },
     data: {
       permissions: {
-        set: updatedPermissionInDb.map((item) => ({
-          id: item.id,
-        })),
+        set: permissionIds,
       },
     },
   })
-  process.exit(0)
 }
 bootstrap()
