@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/shared/service/prisma.service'
 import {
@@ -14,16 +15,41 @@ import { ALL_LANGUAGE_CODE } from 'src/shared/constants/other.constant'
 export class ProductRepo {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async list(query: GetProductsQueryType, languageId: string): Promise<GetProductsResType> {
-    const skip = (query.page - 1) * query.limit
-    const take = query.limit
+  async list({
+    limit,
+    page,
+    name,
+    brandIds,
+    categories,
+    minPrice,
+    maxPrice,
+    createdById,
+    isPublic,
+    languageId,
+  }: {
+    limit: number
+    page: number
+    name?: string
+    brandIds?: number[]
+    categories?: number[]
+    minPrice?: number
+    maxPrice?: number
+    createdById?: number
+    isPublic?: boolean
+    languageId: string
+  }): Promise<GetProductsResType> {
+    const skip = (page - 1) * limit
+    const take = limit
+    const where = {
+      deletedAt: null,
+      createdById: createdById ? createdById : undefined,
+      publishedAt: isPublic ? { lte: new Date(), not: null } : undefined,
+    }
     const [data, totalItems] = await Promise.all([
       this.prismaService.product.findMany({
         skip,
         take,
-        where: {
-          deletedAt: null,
-        },
+        where,
         include: {
           productTranslations: {
             where: languageId === ALL_LANGUAGE_CODE ? { deletedAt: null } : { deletedAt: null, languageId },
@@ -34,25 +60,42 @@ export class ProductRepo {
         },
       }),
       this.prismaService.product.count({
-        where: {
-          deletedAt: null,
-        },
+        where,
       }),
     ])
     return {
       data,
       totalItems,
-      page: query.page,
-      limit: query.limit,
-      totalPages: Math.ceil(totalItems / query.limit),
+      page,
+      limit,
+      totalPages: Math.ceil(totalItems / limit),
     }
   }
 
-  async findById({ id, languageId }: { id: number; languageId: string }): Promise<GetProductDetailResType | null> {
+  async findById(productId: number) {
+    const product = await this.prismaService.product.findUnique({
+      where: {
+        id: productId,
+        deletedAt: null,
+      },
+    })
+    return product
+  }
+
+  async getDetail({
+    productId,
+    languageId,
+    isPublic,
+  }: {
+    productId: number
+    languageId: string
+    isPublic?: boolean
+  }): Promise<GetProductDetailResType | null> {
     return this.prismaService.product.findUnique({
       where: {
-        id,
+        id: productId,
         deletedAt: null,
+        publishedAt: isPublic ? { lte: new Date(), not: null } : undefined,
       },
       include: {
         productTranslations: {
@@ -263,6 +306,16 @@ export class ProductRepo {
       this.prismaService.product.update({
         where: {
           id,
+          deletedAt: null,
+        },
+        data: {
+          deletedAt: new Date(),
+          deletedById,
+        },
+      }),
+      this.prismaService.productTranslation.updateMany({
+        where: {
+          productId: id,
           deletedAt: null,
         },
         data: {
