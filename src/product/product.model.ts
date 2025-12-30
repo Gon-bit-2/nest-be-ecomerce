@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import z from 'zod'
 import { SKUSchema, UpsertSKUBodySchema, UpsertSKUBodySchemaType } from './sku.model'
-import { CategoryIncludeTranslationSchema } from 'src/category/category.model'
-import { BrandIncludeTranslationsSchema } from 'src/brand/brand.model'
 import { ProductTranslationSchema } from './product-translation/product-translation.model'
+import { CategoryIncludeTranslationSchema } from 'src/shared/model/share-category.model'
+import { BrandIncludeTranslationsSchema } from 'src/shared/model/share-brand.model'
 
 function generateSKUs(variants: VariantsType): UpsertSKUBodySchemaType[] {
   function getCombinations(arrays: string[][]) {
@@ -24,7 +24,7 @@ function generateSKUs(variants: VariantsType): UpsertSKUBodySchemaType[] {
     value: value,
     price: 0,
     stock: 100, // TODO: set default stock
-    image: [],
+    image: '',
   }))
 }
 export const VariantSchema = z.object({
@@ -59,7 +59,7 @@ export const ProductSchema = z.object({
   publishedAt: z.coerce.date().nullable(),
   name: z.string(),
   basePrice: z.number(),
-  vitrualPrice: z.number(),
+  virtualPrice: z.number(),
   brandId: z.number(),
   images: z.array(z.string()),
   variants: VariantsSchema,
@@ -86,7 +86,6 @@ export const GetProductsResSchema = z.object({
   data: z.array(
     ProductSchema.extend({
       productTranslations: z.array(ProductTranslationSchema),
-      brand: z.object({}),
     }),
   ),
   totalItems: z.number(),
@@ -112,7 +111,7 @@ export const CreateProductBodySchema = ProductSchema.pick({
   publishedAt: true,
   name: true,
   basePrice: true,
-  vitrualPrice: true,
+  virtualPrice: true,
   brandId: true,
   images: true,
   variants: true,

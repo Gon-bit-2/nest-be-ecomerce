@@ -1,19 +1,5 @@
 import z from 'zod'
-
-export const CategoryTranslationSchema = z.object({
-  id: z.number(),
-  categoryId: z.number(),
-  languageId: z.string(),
-  name: z.string(),
-  description: z.string(),
-
-  createdById: z.number().nullable(),
-  updatedById: z.number().nullable(),
-  deletedById: z.number().nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  deletedAt: z.date().nullable(),
-})
+import { CategoryTranslationSchema } from 'src/shared/model/share-category-translation.model'
 
 export const GetCategoryTranslationParamsSchema = z
   .object({
