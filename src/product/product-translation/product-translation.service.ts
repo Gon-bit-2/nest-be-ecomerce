@@ -1,26 +1,46 @@
-import { Injectable } from '@nestjs/common';
-import { CreateProductTranslationDto } from './dto/create-product-translation.dto';
-import { UpdateProductTranslationDto } from './dto/update-product-translation.dto';
+import { Injectable, NotFoundException } from '@nestjs/common'
+import { ProductTranslationRepo } from './repository/product-translation.repo'
+import { NotFoundRecordException } from 'src/shared/error/error'
+import { CreateProductTranslationBodyType, UpdateProductTranslationBodyType } from './product-translation.model'
 
 @Injectable()
 export class ProductTranslationService {
-  create(createProductTranslationDto: CreateProductTranslationDto) {
-    return 'This action adds a new productTranslation';
+  constructor(private readonly productTranslationRepo: ProductTranslationRepo) {}
+  async findById(id: number) {
+    const productTranslation = await this.productTranslationRepo.findById(id)
+    if (!productTranslation) {
+      throw NotFoundRecordException
+    }
+    return productTranslation
   }
-
-  findAll() {
-    return `This action returns all productTranslation`;
+  async create({ createdById, data }: { createdById: number; data: CreateProductTranslationBodyType }) {
+    try {
+      return this.productTranslationRepo.create({ data, createdById })
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw NotFoundRecordException
+      }
+      throw error
+    }
   }
-
-  findOne(id: number) {
-    return `This action returns a #${id} productTranslation`;
+  async update({ updatedById, id, data }: { updatedById: number; id: number; data: UpdateProductTranslationBodyType }) {
+    try {
+      return this.productTranslationRepo.update({ updatedById, id, data })
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw NotFoundRecordException
+      }
+      throw error
+    }
   }
-
-  update(id: number, updateProductTranslationDto: UpdateProductTranslationDto) {
-    return `This action updates a #${id} productTranslation`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} productTranslation`;
+  async delete({ deletedById, id }: { deletedById: number; id: number }) {
+    try {
+      return this.productTranslationRepo.delete({ deletedById, id })
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw NotFoundRecordException
+      }
+      throw error
+    }
   }
 }
