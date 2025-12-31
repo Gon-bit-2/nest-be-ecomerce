@@ -85,7 +85,6 @@ export const GetProductsQuerySchema = z.object({
   categories: z.array(z.coerce.number().int().positive()).optional(),
   minPrice: z.coerce.number().int().positive().optional(),
   maxPrice: z.coerce.number().int().positive().optional(),
-  isPublic: z.coerce.boolean().optional(),
   createdById: z.coerce.number().int().positive().optional(),
 })
 
@@ -93,7 +92,7 @@ export const GetProductsQuerySchema = z.object({
  * dành cho admin và seller
  */
 export const GetManageProductQuerySchema = GetProductsQuerySchema.extend({
-  isPublic: z.coerce.boolean().optional(),
+  isPublic: z.preprocess((value) => value === 'true', z.boolean()).optional(),
   createdById: z.coerce.number().int().positive(),
 })
 

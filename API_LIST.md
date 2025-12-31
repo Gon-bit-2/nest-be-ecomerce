@@ -36,10 +36,10 @@ Base URL: `localhost:9999`
 
 ```json
 {
-  "email": "user@example.com",
+  "email": "admin@gmail.com",
   "password": "password123",
-  "totpCode": "", // Optional: if 2FA enabled
-  "code": "" // Optional: if login with OTP
+  "totpCode": "", // Optional: if 2FA enabled (6 digits)
+  "code": "" // Optional: if login with OTP (6 digits)
 }
 ```
 
@@ -49,7 +49,7 @@ Base URL: `localhost:9999`
 
 ```json
 {
-  "refreshToken": "your_refresh_token_here"
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 
@@ -59,7 +59,7 @@ Base URL: `localhost:9999`
 
 ```json
 {
-  "refreshToken": "your_refresh_token_here"
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 
@@ -128,7 +128,7 @@ _No Body_
   "email": "newuser@example.com",
   "name": "New User",
   "phoneNumber": "0987654321",
-  "avatar": "", // or null
+  "avatar": "https://example.com/avatar.jpg",
   "status": "ACTIVE", // ACTIVE, INACTIVE, BLOCKED
   "password": "password123",
   "roleId": 1
@@ -144,7 +144,7 @@ _No Body_
   "email": "updated@example.com",
   "name": "Updated Name",
   "phoneNumber": "0987654321",
-  "avatar": "",
+  "avatar": "https://example.com/updated-avatar.jpg",
   "status": "ACTIVE",
   "password": "newpassword123",
   "roleId": 1
@@ -171,9 +171,10 @@ _No Body_
 
 ```json
 {
-  "name": "My Name",
+  "name": "My Updated Name",
+  "yearOfBirth": 1999,
   "phoneNumber": "0123456789",
-  "avatar": "https://example.com/avatar.jpg"
+  "avatar": "https://example.com/my-avatar.jpg"
 }
 ```
 
@@ -200,7 +201,8 @@ _No Body_
 ```json
 {
   "id": "vi",
-  "name": "Tiếng Việt"
+  "name": "Tiếng Việt",
+  "flag": "https://example.com/flag-vi.png"
 }
 ```
 
@@ -220,7 +222,8 @@ _No Body_
 
 ```json
 {
-  "name": "English"
+  "name": "English",
+  "flag": "https://example.com/flag-en.png"
 }
 ```
 
@@ -243,6 +246,17 @@ _Key:_ `file` (File)
 
 **GET** `/media/static/:filename`
 _No Body_
+
+### Get Presigned URL
+
+**POST** `/media/images/upload/presigned-url`
+
+```json
+{
+  "fileName": "image.png",
+  "fileType": "image/png"
+}
+```
 
 ---
 
@@ -353,8 +367,8 @@ _No Body_
 
 ```json
 {
-  "name": "Brand Name",
-  "logo": "https://example.com/logo.png"
+  "name": "Nike",
+  "logo": "https://example.com/nike-logo.png"
 }
 ```
 
@@ -364,8 +378,8 @@ _No Body_
 
 ```json
 {
-  "name": "Brand Name",
-  "logo": "https://example.com/logo.png"
+  "name": "Adidas",
+  "logo": "https://example.com/adidas-logo.png"
 }
 ```
 
@@ -380,8 +394,8 @@ _No Body_
 
 ### Get Brand Translation Detail
 
-**GET** `/brand-translation`
-_Params_: `brandTranslationId` (Query or Param depending on implementation, likely Query currently)
+**GET** `/brand-translation?brandTranslationId=1`
+_No Body_
 
 ### Create Brand Translation
 
@@ -391,8 +405,8 @@ _Params_: `brandTranslationId` (Query or Param depending on implementation, like
 {
   "brandId": 1,
   "languageId": "vi",
-  "name": "Tên Thương Hiệu",
-  "description": "Mô tả chi tiết"
+  "name": "Thương hiệu Nike",
+  "description": "Mô tả chi tiết về Nike bằng tiếng Việt"
 }
 ```
 
@@ -404,8 +418,8 @@ _Params_: `brandTranslationId` (Query or Param depending on implementation, like
 {
   "brandId": 1,
   "languageId": "vi",
-  "name": "Tên Thương Hiệu",
-  "description": "Mô tả chi tiết"
+  "name": "Thương hiệu Nike Updated",
+  "description": "Mô tả chi tiết về Nike đã cập nhật"
 }
 ```
 
@@ -420,51 +434,48 @@ _No Body_
 
 ### List Categories
 
-**GET** `/category`
+**GET** `/categories?parentCategoryId=1`
 _No Body_
 
 ### Get Category Detail
 
-**GET** `/category/:id`
+**GET** `/categories/:id`
 _No Body_
 
 ### Create Category
 
-**POST** `/category`
+**POST** `/categories`
 
 ```json
 {
-  "name": "Category Name"
+  "name": "Electronics",
+  "parentId": null // Or parent category ID like 1
 }
 ```
 
 ### Update Category
 
-**PATCH** `/category/:id`
+**PUT** `/categories/:id`
 
 ```json
 {
-  "name": "Category Name"
+  "name": "Laptops",
+  "parentId": 1
 }
 ```
 
 ### Delete Category
 
-**DELETE** `/category/:id`
+**DELETE** `/categories/:id`
 _No Body_
 
 ---
 
 ## Category Translation Module
 
-### List Category Translations
-
-**GET** `/category-transaliton`
-_No Body_
-
 ### Get Category Translation Detail
 
-**GET** `/category-transaliton/:id`
+**GET** `/category-transaliton?categoryTranslationId=1`
 _No Body_
 
 ### Create Category Translation
@@ -472,20 +483,191 @@ _No Body_
 **POST** `/category-transaliton`
 
 ```json
-{}
+{
+  "categoryId": 1,
+  "languageId": "vi",
+  "name": "Điện tử",
+  "description": "Các thiết bị điện tử"
+}
 ```
 
 ### Update Category Translation
 
-**PATCH** `/category-transaliton/:id`
+**PUT** `/category-transaliton/:id`
 
 ```json
-{}
+{
+  "categoryId": 1,
+  "languageId": "vi",
+  "name": "Điện tử gia dụng",
+  "description": "Các thiết bị điện tử dùng trong gia đình"
+}
 ```
 
 ### Delete Category Translation
 
 **DELETE** `/category-transaliton/:id`
+_No Body_
+
+---
+
+## Product Module (Public)
+
+### List Products
+
+**GET** `/product?page=1&limit=10&name=Shirt&minPrice=10000&maxPrice=500000`
+_No Body_
+
+### Get Product Detail
+
+**GET** `/product/:productId`
+_No Body_
+
+---
+
+## Manage Product Module (Admin/Seller)
+
+### List Products (Manage)
+
+**GET** `/manage-product/products?page=1&limit=10&createdById=1&isPublic=true`
+_No Body_
+
+### Get Product Detail (Manage)
+
+**GET** `/manage-product/products/:productId`
+_No Body_
+
+### Create Product
+
+**POST** `/manage-product/products`
+
+```json
+{
+  "publishedAt": "2023-10-27T00:00:00.000Z",
+  "name": "Áo Thun Premium",
+  "basePrice": 200000,
+  "virtualPrice": 300000,
+  "brandId": 1,
+  "categories": [1, 2],
+  "images": ["https://example.com/product-image-1.jpg", "https://example.com/product-image-2.jpg"],
+  "variants": [
+    {
+      "value": "Color",
+      "options": ["Red", "Blue"]
+    },
+    {
+      "value": "Size",
+      "options": ["M", "L"]
+    }
+  ],
+  "skus": [
+    {
+      "value": "Color-Red-Size-M",
+      "price": 200000,
+      "stock": 50,
+      "image": "https://example.com/red-m.jpg"
+    },
+    {
+      "value": "Color-Red-Size-L",
+      "price": 200000,
+      "stock": 40,
+      "image": "https://example.com/red-l.jpg"
+    },
+    {
+      "value": "Color-Blue-Size-M",
+      "price": 200000,
+      "stock": 50,
+      "image": "https://example.com/blue-m.jpg"
+    },
+    {
+      "value": "Color-Blue-Size-L",
+      "price": 200000,
+      "stock": 40,
+      "image": "https://example.com/blue-l.jpg"
+    }
+  ]
+}
+```
+
+### Update Product
+
+**PUT** `/manage-product/products/:productId`
+
+```json
+{
+  "publishedAt": "2023-10-27T00:00:00.000Z",
+  "name": "Áo Thun Premium Update",
+  "basePrice": 220000,
+  "virtualPrice": 320000,
+  "brandId": 1,
+  "categories": [1],
+  "images": ["https://example.com/product-image-1-new.jpg"],
+  "variants": [
+    {
+      "value": "Color",
+      "options": ["Red"]
+    },
+    {
+      "value": "Size",
+      "options": ["M"]
+    }
+  ],
+  "skus": [
+    {
+      "value": "Color-Red-Size-M",
+      "price": 220000,
+      "stock": 60,
+      "image": "https://example.com/red-m.jpg"
+    }
+  ]
+}
+```
+
+### Delete Product
+
+**DELETE** `/manage-product/products/:productId`
+_No Body_
+
+---
+
+## Product Translation Module
+
+### Get Product Translation Detail
+
+**GET** `/product-translation?productTranslationId=1`
+_No Body_
+
+### Create Product Translation
+
+**POST** `/product-translation`
+
+```json
+{
+  "productId": 1,
+  "languageId": "vi",
+  "name": "Áo Thun Cao Cấp",
+  "description": "Áo thun cotton 100% thoáng mát, thấm hút mồ hôi tốt.",
+  "content": "<h1>Chi tiết sản phẩm</h1><p>Nội dung chi tiết...</p>"
+}
+```
+
+### Update Product Translation
+
+**PATCH** `/product-translation?productTranslationId=1`
+
+```json
+{
+  "productId": 1,
+  "languageId": "vi",
+  "name": "Áo Thun Cao Cấp (Mới)",
+  "description": "Áo thun cotton 100% thoáng mát, thấm hút mồ hôi tốt. Mẫu mới 2024.",
+  "content": "<h1>Chi tiết sản phẩm 2024</h1><p>Nội dung chi tiết mới...</p>"
+}
+```
+
+### Delete Product Translation
+
+**DELETE** `/product-translation?productTranslationId=1`
 _No Body_
 
 ---
