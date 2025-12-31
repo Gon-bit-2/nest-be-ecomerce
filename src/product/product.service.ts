@@ -12,8 +12,14 @@ export class ProductService {
     return this.productRepo.list({
       page: props.query.page,
       limit: props.query.limit,
-      isPublic: true,
       languageId: I18nContext.current()?.lang as string,
+      isPublic: true,
+      name: props.query.name,
+      brandIds: props.query.brandIds,
+      categories: props.query.categories,
+      minPrice: props.query.minPrice,
+      maxPrice: props.query.maxPrice,
+      createdById: props.query.createdById,
     })
   }
   async getDetail(props: { productId: number }) {

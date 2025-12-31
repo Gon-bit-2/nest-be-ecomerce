@@ -56,6 +56,33 @@ export class ProductRepo {
         OR: [{ publishedAt: null }, { publishedAt: { gt: new Date() } }],
       }
     }
+    if (name) {
+      where.name = {
+        contains: name,
+        mode: 'insensitive',
+      }
+    }
+    if (brandIds && brandIds.length > 0) {
+      where.brandId = {
+        in: brandIds,
+      }
+    }
+    if (categories && categories.length > 0) {
+      where.categories = {
+        some: {
+          id: {
+            in: categories,
+          },
+        },
+      }
+    }
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      where.basePrice = {
+        gte: minPrice,
+        lte: maxPrice,
+      }
+    }
+
     const [data, totalItems] = await Promise.all([
       this.prismaService.product.findMany({
         skip,
