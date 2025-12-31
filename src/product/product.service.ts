@@ -20,6 +20,8 @@ export class ProductService {
       minPrice: props.query.minPrice,
       maxPrice: props.query.maxPrice,
       createdById: props.query.createdById,
+      sortBy: props.query.sortBy,
+      orderBy: props.query.orderBy,
     })
   }
   async getDetail(props: { productId: number }) {

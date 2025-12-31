@@ -4,6 +4,7 @@ import { SKUSchema, UpsertSKUBodySchema, UpsertSKUBodySchemaType } from './sku.m
 import { ProductTranslationSchema } from './product-translation/product-translation.model'
 import { CategoryIncludeTranslationSchema } from 'src/shared/model/share-category.model'
 import { BrandIncludeTranslationsSchema } from 'src/shared/model/share-brand.model'
+import { ORDER_BY, SORT_BY } from 'src/shared/constants/other.constant'
 
 function generateSKUs(variants: VariantsType): UpsertSKUBodySchemaType[] {
   function getCombinations(arrays: string[][]) {
@@ -96,6 +97,8 @@ export const GetProductsQuerySchema = z.object({
   minPrice: z.coerce.number().int().positive().optional(),
   maxPrice: z.coerce.number().int().positive().optional(),
   createdById: z.coerce.number().int().positive().optional(),
+  orderBy: z.enum([ORDER_BY.ASC, ORDER_BY.DESC]).default(ORDER_BY.DESC),
+  sortBy: z.enum([SORT_BY.PRICE, SORT_BY.CREATED_AT, SORT_BY.SALE]).default(SORT_BY.CREATED_AT),
 })
 
 /**

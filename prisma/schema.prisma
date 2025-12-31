@@ -233,11 +233,11 @@ model Product {
   skus                SKU[]
   reviews             Review[]
   productTranslations ProductTranslation[]
-
-  createdById Int?
-  createdBy   User? @relation("ProductCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  updatedById Int?
-  updatedBy   User? @relation("ProductUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  order               Order[]
+  createdById         Int?
+  createdBy           User?                @relation("ProductCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById         Int?
+  updatedBy           User?                @relation("ProductUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   deletedAt   DateTime?
   deletedById Int?
@@ -415,16 +415,16 @@ model ProductSKUSnapshot {
 }
 
 model Order {
-  id     Int                  @id @default(autoincrement())
-  userId Int
-  user   User                 @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  status OrderStatus
-  items  ProductSKUSnapshot[]
-
+  id          Int                  @id @default(autoincrement())
+  userId      Int
+  user        User                 @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  status      OrderStatus
+  items       ProductSKUSnapshot[]
+  product     Product[]
   createdById Int?
-  createdBy   User? @relation("OrderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdBy   User?                @relation("OrderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
   updatedById Int?
-  updatedBy   User? @relation("OrderUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedBy   User?                @relation("OrderUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   deletedAt   DateTime?
   deletedById Int?
@@ -433,6 +433,7 @@ model Order {
   updatedAt   DateTime  @updatedAt
 
   @@index([deletedAt])
+  @@index([status, deletedAt])
 }
 
 model Review {

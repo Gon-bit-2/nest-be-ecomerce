@@ -50,6 +50,8 @@ export class ManageProductService {
       minPrice: props.query.minPrice,
       maxPrice: props.query.maxPrice,
       name: props.query.name,
+      sortBy: props.query.sortBy,
+      orderBy: props.query.orderBy,
     })
     return data
   }
