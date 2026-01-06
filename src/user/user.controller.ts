@@ -1,6 +1,12 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common'
 import { UserService } from './user.service'
-import { CreateUserBodyDTO, GetUsersQueryDTO, UpdateUserBodyDTO } from './dto/user.dto'
+import {
+  CreateUserBodyDTO,
+  CreateUserResDTO,
+  GetUsersQueryDTO,
+  GetUsersResDTO,
+  UpdateUserBodyDTO,
+} from './dto/user.dto'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { GetUserProfileResDTO } from 'src/shared/dtos/share-user.dto'
 import { ActiveUser } from 'src/shared/decorators/active-user.decorator'
@@ -11,7 +17,7 @@ import { MessageResDTO } from 'src/shared/dtos/response.dto'
 export class UserController {
   constructor(private readonly userService: UserService) {}
   @Get()
-  @ZodSerializerDto(GetUsersQueryDTO)
+  @ZodSerializerDto(GetUsersResDTO)
   async list(@Query() pagination: GetUsersQueryDTO) {
     return this.userService.list({
       page: pagination.page,
@@ -24,7 +30,7 @@ export class UserController {
     return this.userService.findById(id)
   }
   @Post()
-  @ZodSerializerDto(CreateUserBodyDTO)
+  @ZodSerializerDto(CreateUserResDTO)
   async create(
     @Body() body: CreateUserBodyDTO,
     @ActiveUser('userId') userId: number,

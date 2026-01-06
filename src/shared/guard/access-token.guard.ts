@@ -70,6 +70,6 @@ export class AccessTokenGuard implements CanActivate {
     if (!canAccess) {
       throw new ForbiddenException('Error.Forbidden')
     }
-    request[REQUEST_ROLE_PERMISSIONS] = role.permissions
+    request[REQUEST_ROLE_PERMISSIONS] = role
   }
 }

@@ -22,8 +22,8 @@ export const GetUserResSchema = z.object({
 
 export const GetUsersQuerySchema = z
   .object({
-    page: z.number().optional().default(1),
-    limit: z.number().optional().default(10),
+    page: z.coerce.number().optional().default(1),
+    limit: z.coerce.number().optional().default(10),
   })
   .strict()
 export const GetUserParamsSchema = z

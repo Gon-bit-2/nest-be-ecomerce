@@ -57,6 +57,10 @@ Base URL: `localhost:9999`
 
 **POST** `/auth/logout`
 
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
 ```json
 {
   "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -112,16 +116,26 @@ _No Body_
 ### List Users
 
 **GET** `/user?page=1&limit=10`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ### Get User Detail
 
 **GET** `/user/:id`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ### Create User
 
 **POST** `/user`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
 
 ```json
 {
@@ -139,6 +153,10 @@ _No Body_
 
 **PUT** `/user/:id`
 
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
 ```json
 {
   "email": "updated@example.com",
@@ -154,7 +172,10 @@ _No Body_
 ### Delete User
 
 **DELETE** `/user/:id`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ---
 
@@ -163,11 +184,18 @@ _No Body_
 ### Get Profile
 
 **GET** `/profile`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ### Update Profile
 
 **PUT** `/profile`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
 
 ```json
 {
@@ -181,6 +209,10 @@ _No Body_
 ### Change Password
 
 **PUT** `/profile/change-password`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
 
 ```json
 {
@@ -198,6 +230,10 @@ _No Body_
 
 **POST** `/language`
 
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
 ```json
 {
   "id": "vi",
@@ -209,16 +245,26 @@ _No Body_
 ### List Languages
 
 **GET** `/language`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ### Get Language Detail
 
 **GET** `/language/:languageId`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ### Update Language
 
 **PUT** `/language/:languageId`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
 
 ```json
 {
@@ -230,7 +276,10 @@ _No Body_
 ### Delete Language
 
 **DELETE** `/language/:languageId`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ---
 
@@ -239,8 +288,11 @@ _No Body_
 ### Upload Image
 
 **POST** `/media/images/upload`
-_Type:_ `multipart/form-data`
-_Key:_ `file` (File)
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _Type:_ `multipart/form-data`
+  _Key:_ `file` (File)
 
 ### Serve Static File
 
@@ -265,16 +317,26 @@ _No Body_
 ### List Permissions
 
 **GET** `/permission?page=1&limit=10`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ### Get Permission Detail
 
 **GET** `/permission/:permissionId`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ### Create Permission
 
 **POST** `/permission`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
 
 ```json
 {
@@ -289,6 +351,10 @@ _No Body_
 
 **PATCH** `/permission/:permissionId`
 
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
 ```json
 {
   "name": "Update User",
@@ -301,7 +367,10 @@ _No Body_
 ### Delete Permission
 
 **DELETE** `/permission/:permissionId`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ---
 
@@ -310,16 +379,26 @@ _No Body_
 ### List Roles
 
 **GET** `/role?page=1&limit=10`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ### Get Role Detail
 
 **GET** `/role/:roleId`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ### Create Role
 
 **POST** `/role`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
 
 ```json
 {
@@ -333,6 +412,10 @@ _No Body_
 
 **PATCH** `/role/:roleId`
 
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
 ```json
 {
   "name": "Super Admin",
@@ -345,7 +428,10 @@ _No Body_
 ### Delete Role
 
 **DELETE** `/role/:roleId`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ---
 
@@ -365,6 +451,10 @@ _No Body_
 
 **POST** `/brand`
 
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
 ```json
 {
   "name": "Nike",
@@ -376,6 +466,10 @@ _No Body_
 
 **PUT** `/brand/:id`
 
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
 ```json
 {
   "name": "Adidas",
@@ -386,7 +480,10 @@ _No Body_
 ### Delete Brand
 
 **DELETE** `/brand/:id`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ---
 
@@ -395,11 +492,18 @@ _No Body_
 ### Get Brand Translation Detail
 
 **GET** `/brand-translation?brandTranslationId=1`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ### Create Brand Translation
 
 **POST** `/brand-translation`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
 
 ```json
 {
@@ -414,6 +518,10 @@ _No Body_
 
 **PUT** `/brand-translation/:brandTranslationId`
 
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
 ```json
 {
   "brandId": 1,
@@ -426,7 +534,10 @@ _No Body_
 ### Delete Brand Translation
 
 **DELETE** `/brand-translation/:brandTranslationId`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ---
 
@@ -446,6 +557,10 @@ _No Body_
 
 **POST** `/categories`
 
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
 ```json
 {
   "name": "Electronics",
@@ -457,6 +572,10 @@ _No Body_
 
 **PUT** `/categories/:id`
 
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
 ```json
 {
   "name": "Laptops",
@@ -467,7 +586,10 @@ _No Body_
 ### Delete Category
 
 **DELETE** `/categories/:id`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ---
 
@@ -476,11 +598,18 @@ _No Body_
 ### Get Category Translation Detail
 
 **GET** `/category-transaliton?categoryTranslationId=1`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ### Create Category Translation
 
 **POST** `/category-transaliton`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
 
 ```json
 {
@@ -495,6 +624,10 @@ _No Body_
 
 **PUT** `/category-transaliton/:id`
 
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
 ```json
 {
   "categoryId": 1,
@@ -507,7 +640,10 @@ _No Body_
 ### Delete Category Translation
 
 **DELETE** `/category-transaliton/:id`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ---
 
@@ -530,16 +666,26 @@ _No Body_
 ### List Products (Manage)
 
 **GET** `/manage-product/products?page=1&limit=10&createdById=1&isPublic=true`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ### Get Product Detail (Manage)
 
 **GET** `/manage-product/products/:productId`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ### Create Product
 
 **POST** `/manage-product/products`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
 
 ```json
 {
@@ -593,6 +739,10 @@ _No Body_
 
 **PUT** `/manage-product/products/:productId`
 
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
 ```json
 {
   "publishedAt": "2023-10-27T00:00:00.000Z",
@@ -626,7 +776,10 @@ _No Body_
 ### Delete Product
 
 **DELETE** `/manage-product/products/:productId`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ---
 
@@ -635,11 +788,18 @@ _No Body_
 ### Get Product Translation Detail
 
 **GET** `/product-translation?productTranslationId=1`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ### Create Product Translation
 
 **POST** `/product-translation`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
 
 ```json
 {
@@ -655,6 +815,10 @@ _No Body_
 
 **PATCH** `/product-translation?productTranslationId=1`
 
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
 ```json
 {
   "productId": 1,
@@ -668,11 +832,17 @@ _No Body_
 ### Delete Product Translation
 
 **DELETE** `/product-translation?productTranslationId=1`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_
 
 ---
 
 ## App
 
 **GET** `/`
-_No Body_
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+  _No Body_

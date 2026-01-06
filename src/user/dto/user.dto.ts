@@ -6,11 +6,17 @@ import {
   GetUsersQuerySchema,
   UpdateUserBodySchema,
 } from '../user.model'
-import { UpdateUserProfileResDTO } from 'src/shared/dtos/share-user.dto'
+import { UserSchema } from 'src/shared/model/shared-user.model'
 
 export class GetUsersResDTO extends createZodDto(GetUserResSchema) {}
 export class GetUsersQueryDTO extends createZodDto(GetUsersQuerySchema) {}
 export class GetUserParamsDTO extends createZodDto(GetUserParamsSchema) {}
 export class CreateUserBodyDTO extends createZodDto(CreateUserBodySchema) {}
 export class UpdateUserBodyDTO extends createZodDto(UpdateUserBodySchema) {}
-export class CreateUserResDTO extends UpdateUserProfileResDTO {}
+// export class CreateUserResDTO extends UpdateUserProfileResDTO {}
+export class CreateUserResDTO extends createZodDto(
+  UserSchema.omit({
+    password: true,
+    totpSecret: true,
+  }),
+) {}
