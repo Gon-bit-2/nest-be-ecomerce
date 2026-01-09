@@ -20,3 +20,5 @@ export class CreateUserResDTO extends createZodDto(
     totpSecret: true,
   }),
 ) {}
+
+export class UpdateUserResDTO extends CreateUserResDTO {}

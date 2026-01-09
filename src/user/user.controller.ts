@@ -6,6 +6,7 @@ import {
   GetUsersQueryDTO,
   GetUsersResDTO,
   UpdateUserBodyDTO,
+  UpdateUserResDTO,
 } from './dto/user.dto'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { GetUserProfileResDTO } from 'src/shared/dtos/share-user.dto'
@@ -43,7 +44,7 @@ export class UserController {
     })
   }
   @Put(':id')
-  @ZodSerializerDto(UpdateUserBodyDTO)
+  @ZodSerializerDto(UpdateUserResDTO)
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() data: UpdateUserBodyDTO,

@@ -9,20 +9,20 @@ export const RoleWithPermissionSchema = RoleSchema.extend({
 export const GetRoleResSchema = z.object({
   data: z.array(RoleSchema),
   totalItems: z.number(),
-  page: z.number(),
-  limit: z.number(),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().default(10),
   totalPages: z.number(),
 })
 
 export const GetRoleQuerySchema = z
   .object({
-    page: z.number().optional().default(1),
-    limit: z.number().optional().default(10),
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().default(10),
   })
   .strict()
 export const GetRoleParamsSchema = z
   .object({
-    roleId: z.number(),
+    roleId: z.coerce.number(),
   })
   .strict()
 export const GetRoleDetailResSchema = RoleWithPermissionSchema

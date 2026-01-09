@@ -9,6 +9,8 @@ export class RoleService {
   constructor(private readonly roleRepo: RoleRepo) {}
   private async verifyRole(roleId: number) {
     const role = await this.roleRepo.findById(roleId)
+    console.log(role)
+
     if (!role) {
       throw new NotFoundException('Role not found')
     }
@@ -49,22 +51,24 @@ export class RoleService {
   }
 
   async update({ updatedById, id, data }: { updatedById: number; id: number; data: UpdateRoleBodyType }) {
+    //kiểm tra Role cần update có phải là base role không
+    await this.verifyRole(id)
     try {
-      //kiểm tra người cập nhật có quyền không
-      await this.verifyRole(updatedById)
       const role = await this.roleRepo.findById(id)
       if (!role) {
         throw new NotFoundException('Role not found')
       }
       //không cho phép bất kì ai cập nhập role Admin
       if (role.name === roleName.Admin) {
-        throw new ForbiddenException('You can not update this role')
+        throw new ForbiddenException('You can wait update this role')
       }
       const updatedRole = await this.roleRepo.update({ updatedById, id, data })
       return updatedRole
     } catch (error) {
-      if (error instanceof Error) {
-        throw new ForbiddenException(error.message)
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          throw new BadRequestException('Role not found')
+        }
       }
       throw error
     }
