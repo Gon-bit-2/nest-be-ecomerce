@@ -89,6 +89,9 @@ export class UserService {
         roleNameAgent: updateByRoleName,
         roleIdTarget,
       })
+      if (data.password) {
+        data.password = await this.hashingService.hash(data.password)
+      }
       const updateUser = await this.shareUserRepository.update(
         {
           id,

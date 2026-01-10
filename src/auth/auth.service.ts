@@ -85,6 +85,7 @@ export class AuthService {
       if (error instanceof Error) {
         throw new BadRequestException('Người Dùng Đã Tồn Tại')
       }
+      throw error
     }
   }
 

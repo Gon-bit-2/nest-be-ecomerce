@@ -8,6 +8,8 @@ Base URL: `localhost:9999`
 
 **POST** `/auth/otp`
 
+_No Auth Headers_
+
 ```json
 {
   "email": "user@example.com",
@@ -18,6 +20,8 @@ Base URL: `localhost:9999`
 ### Register
 
 **POST** `/auth/register`
+
+_No Auth Headers_
 
 ```json
 {
@@ -34,18 +38,22 @@ Base URL: `localhost:9999`
 
 **POST** `/auth/login`
 
+_No Auth Headers_
+
 ```json
 {
   "email": "admin@gmail.com",
   "password": "password123",
-  "totpCode": "", // Optional: if 2FA enabled (6 digits)
-  "code": "" // Optional: if login with OTP (6 digits)
+  "totpCode": "123456", // Optional_
+  "code": "123456" // Optional
 }
 ```
 
 ### Refresh Token
 
 **POST** `/auth/refresh-token`
+
+_No Auth Headers_
 
 ```json
 {
@@ -70,16 +78,22 @@ Base URL: `localhost:9999`
 ### Google Authorization URL
 
 **GET** `/auth/google-link`
+
+_No Auth Headers_
 _No Body_
 
 ### Google Callback
 
 **GET** `/auth/google/callback?state=...&code=...`
+
+_No Auth Headers_
 _No Body_
 
 ### Forgot Password
 
 **POST** `/auth/forgot-password`
+
+_No Auth Headers_
 
 ```json
 {
@@ -94,6 +108,10 @@ _No Body_
 
 **POST** `/auth/2fa/setup`
 
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
 ```json
 {}
 ```
@@ -102,10 +120,14 @@ _No Body_
 
 **POST** `/auth/2fa/disable`
 
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
 ```json
 {
-  "totpCode": "123456", // Or use code
-  "code": "123456" // Or use totpCode
+  "totpCode": "123456", // Optional
+  "code": "123456" // Optional
 }
 ```
 
@@ -116,18 +138,22 @@ _No Body_
 ### List Users
 
 **GET** `/user?page=1&limit=10`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ### Get User Detail
 
 **GET** `/user/:id`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ### Create User
 
@@ -159,7 +185,7 @@ _No Body_
 
 ```json
 {
-  "email": "updated@example.com",
+  "email": "updated@example.com", // Optional, partial update usually allowed if same DTO, but here code says CreateUserBodySchema for Update.
   "name": "Updated Name",
   "phoneNumber": "0987654321",
   "avatar": "https://example.com/updated-avatar.jpg",
@@ -172,10 +198,12 @@ _No Body_
 ### Delete User
 
 **DELETE** `/user/:id`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ---
 
@@ -184,10 +212,12 @@ _No Body_
 ### Get Profile
 
 **GET** `/profile`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ### Update Profile
 
@@ -200,7 +230,6 @@ _No Body_
 ```json
 {
   "name": "My Updated Name",
-  "yearOfBirth": 1999,
   "phoneNumber": "0123456789",
   "avatar": "https://example.com/my-avatar.jpg"
 }
@@ -237,26 +266,29 @@ _No Body_
 ```json
 {
   "id": "vi",
-  "name": "Tiếng Việt",
-  "flag": "https://example.com/flag-vi.png"
+  "name": "Tiếng Việt"
 }
 ```
 
 ### List Languages
 
 **GET** `/language`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ### Get Language Detail
 
 **GET** `/language/:languageId`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ### Update Language
 
@@ -268,18 +300,19 @@ _No Body_
 
 ```json
 {
-  "name": "English",
-  "flag": "https://example.com/flag-en.png"
+  "name": "English"
 }
 ```
 
 ### Delete Language
 
 **DELETE** `/language/:languageId`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ---
 
@@ -288,25 +321,33 @@ _No Body_
 ### Upload Image
 
 **POST** `/media/images/upload`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _Type:_ `multipart/form-data`
-  _Key:_ `file` (File)
+- `Content-Type`: `multipart/form-data`
+
+_Form Data:_
+
+- `file`: (Binary File)
 
 ### Serve Static File
 
 **GET** `/media/static/:filename`
+
+_No Auth Headers_
 _No Body_
 
 ### Get Presigned URL
 
 **POST** `/media/images/upload/presigned-url`
 
+_No Auth Headers_
+
 ```json
 {
   "fileName": "image.png",
-  "fileType": "image/png"
+  "fileSize": "1024" // string representation of size
 }
 ```
 
@@ -317,18 +358,22 @@ _No Body_
 ### List Permissions
 
 **GET** `/permission?page=1&limit=10`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ### Get Permission Detail
 
 **GET** `/permission/:permissionId`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ### Create Permission
 
@@ -367,10 +412,12 @@ _No Body_
 ### Delete Permission
 
 **DELETE** `/permission/:permissionId`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ---
 
@@ -379,18 +426,22 @@ _No Body_
 ### List Roles
 
 **GET** `/role?page=1&limit=10`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ### Get Role Detail
 
 **GET** `/role/:roleId`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ### Create Role
 
@@ -410,7 +461,7 @@ _No Body_
 
 ### Update Role
 
-**PATCH** `/role/:roleId`
+**PUT** `/role/:roleId`
 
 **Headers**
 
@@ -428,10 +479,12 @@ _No Body_
 ### Delete Role
 
 **DELETE** `/role/:roleId`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ---
 
@@ -440,11 +493,15 @@ _No Body_
 ### List Brands
 
 **GET** `/brand?page=1&limit=10`
+
+_No Auth Headers_
 _No Body_
 
 ### Get Brand Detail
 
 **GET** `/brand/:id`
+
+_No Auth Headers_
 _No Body_
 
 ### Create Brand
@@ -480,10 +537,12 @@ _No Body_
 ### Delete Brand
 
 **DELETE** `/brand/:id`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ---
 
@@ -492,10 +551,12 @@ _No Body_
 ### Get Brand Translation Detail
 
 **GET** `/brand-translation?brandTranslationId=1`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ### Create Brand Translation
 
@@ -534,10 +595,12 @@ _No Body_
 ### Delete Brand Translation
 
 **DELETE** `/brand-translation/:brandTranslationId`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ---
 
@@ -546,11 +609,15 @@ _No Body_
 ### List Categories
 
 **GET** `/categories?parentCategoryId=1`
+
+_No Auth Headers_
 _No Body_
 
 ### Get Category Detail
 
 **GET** `/categories/:id`
+
+_No Auth Headers_
 _No Body_
 
 ### Create Category
@@ -564,7 +631,8 @@ _No Body_
 ```json
 {
   "name": "Electronics",
-  "parentId": null // Or parent category ID like 1
+  "logo": "https://example.com/logo.png",
+  "parentCategoryId": null // Or parent category ID like 1
 }
 ```
 
@@ -579,17 +647,20 @@ _No Body_
 ```json
 {
   "name": "Laptops",
-  "parentId": 1
+  "logo": "https://example.com/logo.png",
+  "parentCategoryId": 1
 }
 ```
 
 ### Delete Category
 
 **DELETE** `/categories/:id`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ---
 
@@ -598,10 +669,12 @@ _No Body_
 ### Get Category Translation Detail
 
 **GET** `/category-transaliton?categoryTranslationId=1`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ### Create Category Translation
 
@@ -640,10 +713,12 @@ _No Body_
 ### Delete Category Translation
 
 **DELETE** `/category-transaliton/:id`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ---
 
@@ -652,11 +727,15 @@ _No Body_
 ### List Products
 
 **GET** `/product?page=1&limit=10&name=Shirt&minPrice=10000&maxPrice=500000`
+
+_No Auth Headers_
 _No Body_
 
 ### Get Product Detail
 
 **GET** `/product/:productId`
+
+_No Auth Headers_
 _No Body_
 
 ---
@@ -666,18 +745,22 @@ _No Body_
 ### List Products (Manage)
 
 **GET** `/manage-product/products?page=1&limit=10&createdById=1&isPublic=true`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ### Get Product Detail (Manage)
 
 **GET** `/manage-product/products/:productId`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ### Create Product
 
@@ -776,10 +859,12 @@ _No Body_
 ### Delete Product
 
 **DELETE** `/manage-product/products/:productId`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ---
 
@@ -788,10 +873,12 @@ _No Body_
 ### Get Product Translation Detail
 
 **GET** `/product-translation?productTranslationId=1`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
+
+_No Body_
 
 ### Create Product Translation
 
@@ -805,15 +892,14 @@ _No Body_
 {
   "productId": 1,
   "languageId": "vi",
-  "name": "Áo Thun Cao Cấp",
-  "description": "Áo thun cotton 100% thoáng mát, thấm hút mồ hôi tốt.",
-  "content": "<h1>Chi tiết sản phẩm</h1><p>Nội dung chi tiết...</p>"
+  "name": "Áo Thun (Tiếng Việt)",
+  "description": "Mô tả áo thun"
 }
 ```
 
 ### Update Product Translation
 
-**PATCH** `/product-translation?productTranslationId=1`
+**PATCH** `/product-translation`
 
 **Headers**
 
@@ -823,26 +909,17 @@ _No Body_
 {
   "productId": 1,
   "languageId": "vi",
-  "name": "Áo Thun Cao Cấp (Mới)",
-  "description": "Áo thun cotton 100% thoáng mát, thấm hút mồ hôi tốt. Mẫu mới 2024.",
-  "content": "<h1>Chi tiết sản phẩm 2024</h1><p>Nội dung chi tiết mới...</p>"
+  "name": "Áo Thun (TV Updated)",
+  "description": "Mô tả updated"
 }
 ```
 
 ### Delete Product Translation
 
-**DELETE** `/product-translation?productTranslationId=1`
+**DELETE** `/product-translation`
+
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
-  _No Body_
 
----
-
-## App
-
-**GET** `/`
-**Headers**
-
-- `Authorization`: `Bearer <accessToken>`
-  _No Body_
+_No Body_
