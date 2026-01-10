@@ -10,6 +10,7 @@ import { PrismaService } from 'src/shared/service/prisma.service'
 import roleName, { HTTPMethod } from 'src/shared/constants/role.constant'
 
 const SellerModule = ['AUTH', 'MEDIA', 'MANAGE-PRODUCT', 'PRODUCT-TRANSLATION', 'PROFILE']
+const ClientModule = ['AUTH', 'PROFILE', 'MEDIA']
 
 const prisma = new PrismaService()
 async function bootstrap() {
@@ -94,11 +95,16 @@ async function bootstrap() {
   }))
   // Lọc danh sách các quyền (permissions) từ database dựa trên các module được phép truy cập đã định nghĩa trong SellerModule
   const sellerPermissionIds = updatedPermissionInDb
-    .filter((item) => SellerModule.includes(item.module))
+    .filter((item) => SellerModule.includes(item.module.toUpperCase()))
+    .map((item) => ({ id: item.id }))
+
+  const clientPermissionIds = updatedPermissionInDb
+    .filter((item) => ClientModule.includes(item.module.toUpperCase()))
     .map((item) => ({ id: item.id }))
 
   await updateRole(adminPermissionIds, roleName.Admin)
   await updateRole(sellerPermissionIds, roleName.Seller)
+  await updateRole(clientPermissionIds, roleName.Client)
   process.exit(0)
 }
 const updateRole = async (permissionIds: { id: number }[], roleName: string) => {
