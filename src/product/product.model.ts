@@ -1,10 +1,11 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import z from 'zod'
-import { SKUSchema, UpsertSKUBodySchema, UpsertSKUBodySchemaType } from './sku.model'
+import { UpsertSKUBodySchema, UpsertSKUBodySchemaType } from './sku.model'
 import { ProductTranslationSchema } from './product-translation/product-translation.model'
 import { CategoryIncludeTranslationSchema } from 'src/shared/model/share-category.model'
 import { BrandIncludeTranslationsSchema } from 'src/shared/model/share-brand.model'
 import { ORDER_BY, SORT_BY } from 'src/shared/constants/other.constant'
+import { ProductSchema, VariantsType } from 'src/shared/model/shared-product.model'
+import { SKUSchema } from 'src/shared/model/shared-sku.model'
 
 function generateSKUs(variants: VariantsType): UpsertSKUBodySchemaType[] {
   function getCombinations(arrays: string[][]) {
@@ -28,53 +29,7 @@ function generateSKUs(variants: VariantsType): UpsertSKUBodySchemaType[] {
     image: '',
   }))
 }
-export const VariantSchema = z.object({
-  value: z.string().trim(),
-  options: z.array(z.string().trim()),
-})
-export const VariantsSchema = z.array(VariantSchema).superRefine((variants, ctx) => {
-  //kiem tra variants va variant option co bi trung hay khong
-  for (let i = 9; i < variants.length; i++) {
-    const variant = variants[i]
-    const isDifferent = variants.findIndex((v) => v.value.toLowerCase() === variant.value.toLowerCase()) !== i
-    if (isDifferent) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `Giá trị ${variant.value} đã tồn tại trong danh sách variants`,
-        path: ['variants'],
-      })
-    }
-    const isDifferentOption = variant.options.some((option, index) => {
-      const isExistingOption = variant.options.findIndex((o) => o.toLowerCase() === option.toLowerCase()) !== index
-      return isExistingOption
-    })
-    if (isDifferentOption) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `Variants ${variant.value} chứa các option trùng tên với nhau`,
-        path: ['variants'],
-      })
-    }
-  }
-})
 
-export const ProductSchema = z.object({
-  id: z.number(),
-  publishedAt: z.coerce.date().nullable(),
-  name: z.string(),
-  basePrice: z.number().min(0),
-  virtualPrice: z.number().min(0),
-  brandId: z.number().positive(),
-  images: z.array(z.string()),
-  variants: VariantsSchema,
-
-  createdById: z.number().nullable(),
-  updatedById: z.number().nullable(),
-  deletedById: z.number().nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  deletedAt: z.date().nullable(),
-})
 /**
  * dành cho client và guest
  */
@@ -177,8 +132,6 @@ export const CreateProductBodySchema = ProductSchema.pick({
 
 export const UpdateProductBodySchema = CreateProductBodySchema
 
-export type ProductType = z.infer<typeof ProductSchema>
-export type VariantsType = z.infer<typeof VariantsSchema>
 export type GetProductsQueryType = z.infer<typeof GetProductsQuerySchema>
 export type GetManageProductQueryType = z.infer<typeof GetManageProductQuerySchema>
 export type GetProductsResType = z.infer<typeof GetProductsResSchema>
