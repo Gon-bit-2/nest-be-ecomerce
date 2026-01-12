@@ -1,11 +1,11 @@
 import z from 'zod'
 import { UpsertSKUBodySchema, UpsertSKUBodySchemaType } from './sku.model'
-import { ProductTranslationSchema } from './product-translation/product-translation.model'
 import { CategoryIncludeTranslationSchema } from 'src/shared/model/share-category.model'
 import { BrandIncludeTranslationsSchema } from 'src/shared/model/share-brand.model'
 import { ORDER_BY, SORT_BY } from 'src/shared/constants/other.constant'
 import { ProductSchema, VariantsType } from 'src/shared/model/shared-product.model'
 import { SKUSchema } from 'src/shared/model/shared-sku.model'
+import { ProductTranslationSchema } from 'src/shared/model/shared-product-translation.model'
 
 function generateSKUs(variants: VariantsType): UpsertSKUBodySchemaType[] {
   function getCombinations(arrays: string[][]) {

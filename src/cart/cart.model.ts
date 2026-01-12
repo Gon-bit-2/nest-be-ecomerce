@@ -1,4 +1,4 @@
-import { ProductTranslationSchema } from 'src/product/product-translation/product-translation.model'
+import { ProductTranslationSchema } from 'src/shared/model/shared-product-translation.model'
 import { ProductSchema } from 'src/shared/model/shared-product.model'
 import { SKUSchema } from 'src/shared/model/shared-sku.model'
 import { UserSchema } from 'src/shared/model/shared-user.model'
