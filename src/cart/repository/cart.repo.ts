@@ -3,7 +3,14 @@ import { SKUSchemaType } from 'src/shared/model/shared-sku.model'
 import { PrismaService } from 'src/shared/service/prisma.service'
 import { NotFoundSKUException, OutOfStockSKUException, ProductNotFoundException } from '../error/cart.error'
 import { ALL_LANGUAGE_CODE } from 'src/shared/constants/other.constant'
-import { AddCartBodyType, CartItemType, DeleteCartBodyType, GetCartResType, UpdateCartBodyType } from '../cart.model'
+import {
+  AddCartBodyType,
+  CartItemType,
+  DeleteCartBodyType,
+  GetCartResType,
+  UpdateCartBodyType,
+  CartItemDetailType,
+} from '../cart.model'
 
 @Injectable()
 export class CartRepo {
@@ -49,49 +56,65 @@ export class CartRepo {
     limit: number
     page: number
   }): Promise<GetCartResType> {
-    const skip = (page - 1) * limit
-    const take = limit
-
-    const [data, totalItems] = await Promise.all([
-      this.prismaService.cartItem.findMany({
-        where: {
-          userId,
+    const cartItems = await this.prismaService.cartItem.findMany({
+      where: {
+        userId,
+        sku: {
+          product: {
+            deletedAt: null,
+            publishedAt: {
+              lte: new Date(),
+              not: null,
+            },
+          },
         },
-        include: {
-          sku: {
-            include: {
-              product: {
-                include: {
-                  productTranslations: {
-                    where:
-                      languageId === ALL_LANGUAGE_CODE
-                        ? { deletedAt: null }
-                        : { deletedAt: null, languageId: languageId },
-                  },
+      },
+      include: {
+        sku: {
+          include: {
+            product: {
+              include: {
+                productTranslations: {
+                  where:
+                    languageId === ALL_LANGUAGE_CODE
+                      ? { deletedAt: null }
+                      : { deletedAt: null, languageId: languageId },
                 },
+                createdBy: true,
               },
             },
           },
         },
-        skip,
-        take,
-        orderBy: {
-          createdAt: 'desc',
-        },
-      }),
-      this.prismaService.cartItem.count({
-        where: {
-          userId,
-        },
-      }),
-    ])
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    })
 
+    const groupMap = new Map<number, CartItemDetailType>()
+    for (const cartItem of cartItems) {
+      const shopId = cartItem.sku.product.createdById
+      if (shopId) {
+        if (!groupMap.has(shopId)) {
+          groupMap.set(shopId, {
+            shop: cartItem.sku.product.createdBy,
+            cartItems: [],
+          })
+        }
+        groupMap.get(shopId)?.cartItems.push(cartItem)
+      }
+    }
+    const sortedGroups = Array.from(groupMap.values())
+    const skip = (page - 1) * limit
+    const take = limit
+    const totalGroups = sortedGroups.length
+    const pagedGroups = sortedGroups.slice(skip, skip + take)
     return {
-      data,
+      data: pagedGroups,
       limit,
       page,
-      totalItems,
-      totalPages: Math.ceil(totalItems / limit),
+      totalItems: totalGroups,
+      totalPages: Math.ceil(totalGroups / limit),
     }
   }
 
