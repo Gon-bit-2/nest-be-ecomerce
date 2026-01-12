@@ -33,12 +33,12 @@ export const ProductSKUSnapshotSchema = z.object({
   id: z.number(),
   productId: z.number().nullable(),
   productName: z.string(),
-  productTranslation: z.array(
+  productTranslations: z.array(
     z.object({
       id: z.number(),
       name: z.string(),
       description: z.string(),
-      language: z.string(),
+      languageId: z.string(),
     }),
   ),
   skuId: z.number().nullable(),
@@ -103,6 +103,7 @@ export const GetOrderParamsSchema = z
 
 export type OrderType = z.infer<typeof OrderSchema>
 export type GetOrderListResType = z.infer<typeof GetOrderListResSchema>
+export type GetOrderListQueryType = z.infer<typeof GetOrderListQuerySchema>
 export type GetOrderDetailResType = z.infer<typeof GetOrderDetailResSchema>
 export type GetOrderParamsType = z.infer<typeof GetOrderParamsSchema>
 export type CreateOrderBodyType = z.infer<typeof CreateOrderBodySchema>

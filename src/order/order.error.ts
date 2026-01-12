@@ -5,3 +5,4 @@ export const ProductNotFoundException = new NotFoundException('Error.ProductNotF
 export const OutOfStockSKUException = new BadRequestException('Error.OutOfStockSKU')
 export const NotFoundCartItemException = new NotFoundException('Error.NotFoundCartItem')
 export const SKUNotBeLongToShopException = new BadRequestException('Error.SKUNotBeLongToShop')
+export const CanNotCancelOrderException = new BadRequestException('Error.CanNotCancelOrder')
