@@ -14,7 +14,7 @@ type Data = {
     publishedAt: string | null
     name: string
     basePrice: number
-    vitrualPrice: number
+    virtualPrice: number
     brandId: number
     images: string[]
     variants: Variant[]
@@ -28,7 +28,7 @@ const data: Data = {
     publishedAt: null,
     name: 'Sản phẩm test',
     basePrice: 100000,
-    vitrualPrice: 100000,
+    virtualPrice: 100000,
     brandId: 1,
     images: ['https://via.placeholder.com/150'],
     variants: [],
@@ -57,7 +57,7 @@ const data: Data = {
 const variants: Variant[] = [
   {
     value: 'Màu sắc',
-    options: ['Đen', 'Trắng', 'Xanh', 'Tím'],
+    options: ['Đen', 'Trắng', 'Xanh', 'Tím', 'Đỏ'],
   },
   {
     value: 'Kích thước',
@@ -72,7 +72,6 @@ function generateSKUs(variants: Variant[]): SKU[] {
   if (variants.length === 0) return []
 
   // 2. Tạo ra tất cả các tổ hợp string (Cartesian Product)
-  // Kết quả mong muốn đoạn này: ["Đen-S", "Đen-M", ..., "Trắng-XL"]
   const combinations = variants.reduce((acc: string[], currentVariant) => {
     // Nếu acc rỗng (vòng lặp đầu tiên), trả về options của variant đầu tiên
     if (acc.length === 0) {
@@ -92,6 +91,8 @@ function generateSKUs(variants: Variant[]): SKU[] {
   }))
 }
 
-// --- Chạy thử nghiệm ---
-const result = generateSKUs(data.product.variants)
-console.log(result)
+// Update data to use the variants and generated SKUs
+data.product.variants = variants
+data.skus = generateSKUs(variants)
+
+console.log(JSON.stringify(data, null, 2))

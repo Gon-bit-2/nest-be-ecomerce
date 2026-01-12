@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Delete, Query, Put } from '@nestjs/common'
 import { BrandService } from './brand.service'
 
-import { type PaginationQueryType } from 'src/shared/model/request.model'
+import { PaginationQueryDTO } from 'src/shared/dtos/request.dto'
 import { isPublic } from 'src/shared/decorators/auth.decorator'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { CreateBrandBodyDTO, GetBrandDetailResDTO, GetBrandParamsDTO, GetBrandResDTO } from 'src/brand/dto/brand.dto'
@@ -14,7 +14,7 @@ export class BrandController {
   @Get()
   @isPublic()
   @ZodSerializerDto(GetBrandResDTO)
-  list(@Query() query: PaginationQueryType) {
+  list(@Query() query: PaginationQueryDTO) {
     return this.brandService.list(query)
   }
   @Get(':id')

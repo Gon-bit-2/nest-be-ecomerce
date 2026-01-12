@@ -3,7 +3,7 @@ import z from 'zod'
 
 export const GetBrandsResSchema = z.object({
   data: z.array(BrandIncludeTranslationsSchema),
-  total: z.number(),
+  totalItems: z.number(),
   page: z.number(),
   limit: z.number(),
   totalPages: z.number(),
