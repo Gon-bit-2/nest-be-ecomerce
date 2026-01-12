@@ -17,7 +17,7 @@ import { Prisma } from '@prisma/client'
 export class CartRepo {
   constructor(private readonly prismaService: PrismaService) {}
 
-  private async validateSKU(skuId: number): Promise<SKUSchemaType> {
+  private async validateSKU(skuId: number, quantity: number): Promise<SKUSchemaType> {
     const sku = await this.prismaService.sKU.findUnique({
       where: {
         id: skuId,
@@ -31,8 +31,9 @@ export class CartRepo {
     if (!sku) {
       throw NotFoundSKUException
     }
-    //kiểm tra tồn kho
-    if (sku.stock < 1) {
+
+    //kiểm tra số lượng
+    if (sku.stock < quantity || sku.stock < 1) {
       throw OutOfStockSKUException
     }
     const { product } = sku
@@ -188,7 +189,7 @@ export class CartRepo {
                 ), '[]'::json)
               )
            )
-         )
+         ) ORDER BY "CartItem"."updatedAt" DESC
        ) AS "cartItems",
        jsonb_build_object(
          'id', "User"."id",
@@ -222,11 +223,20 @@ export class CartRepo {
   }
   async create(userId: number, body: AddCartBodyType): Promise<CartItemType> {
     const { skuId, quantity } = body
-    await this.validateSKU(skuId)
-    const cartItem = await this.prismaService.cartItem.create({
-      data: {
+    await this.validateSKU(skuId, quantity)
+    const cartItem = await this.prismaService.cartItem.upsert({
+      where: {
+        userId_skuId: {
+          userId,
+          skuId,
+        },
+      },
+      create: {
         userId,
         skuId,
+        quantity,
+      },
+      update: {
         quantity,
       },
     })
@@ -234,7 +244,7 @@ export class CartRepo {
   }
 
   async update(cartItemId: number, body: UpdateCartBodyType): Promise<CartItemType> {
-    await this.validateSKU(body.skuId)
+    await this.validateSKU(body.skuId, body.quantity)
     const updateCartItems = await this.prismaService.cartItem.update({
       where: {
         id: cartItemId,
