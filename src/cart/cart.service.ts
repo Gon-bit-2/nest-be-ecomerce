@@ -21,8 +21,8 @@ export class CartService {
     return this.cartRepo.create(userId, body)
   }
 
-  async update(cartItemId: number, body: UpdateCartBodyType) {
-    return this.cartRepo.update(cartItemId, body)
+  async update({ userId, cartItemId, body }: { userId: number; cartItemId: number; body: UpdateCartBodyType }) {
+    return this.cartRepo.update({ userId, cartItemId, body })
   }
 
   async delete(userId: number, body: DeleteCartBodyType) {
