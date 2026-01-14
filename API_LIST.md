@@ -731,6 +731,19 @@ _No Body_
 _No Auth Headers_
 _No Body_
 
+**Query Params:**
+
+- `page`: number (default 1)
+- `limit`: number (default 10)
+- `name`: string (optional)
+- `brandIds`: number[] (optional)
+- `categories`: number[] (optional)
+- `minPrice`: number (optional)
+- `maxPrice`: number (optional)
+- `createdById`: number (optional)
+- `orderBy`: "ASC" | "DESC" (default "DESC")
+- `sortBy`: "price" | "createdAt" | "sale" (default "createdAt")
+
 ### Get Product Detail
 
 **GET** `/product/:productId`
@@ -917,6 +930,126 @@ _No Body_
 ### Delete Product Translation
 
 **DELETE** `/product-translation`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+_No Body_
+
+---
+
+## Cart Module
+
+### List Cart Items
+
+**GET** `/cart?page=1&limit=10`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+_No Body_
+
+### Add to Cart
+
+**POST** `/cart`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+{
+  "skuId": 1,
+  "quantity": 1
+}
+```
+
+### Update Cart Item
+
+**PUT** `/cart/:cartItemId`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+{
+  "skuId": 1,
+  "quantity": 2
+}
+```
+
+_Note: Ensure `cartItemId` is passed in the route._
+
+### Delete Cart Item
+
+**POST** `/cart/delete`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+{
+  "cartItemIds": [1, 2]
+}
+```
+
+---
+
+## Order Module
+
+### List Orders
+
+**GET** `/order?page=1&limit=10&status=PENDING_PAYMENT`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+_No Body_
+
+**Query Params:**
+
+- `status`: "PENDING_PAYMENT" | "PENDING_PICKUP" | "PENDING_DELIVERY" | "DELIVERED" | "RETURNED" | "CANCELLED" (Optional)
+
+### Get Order Detail
+
+**GET** `/order/:orderId`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+_No Body_
+
+### Create Order
+
+**POST** `/order`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+[
+  {
+    "shopId": 1,
+    "receiver": {
+      "name": "Receiver Name",
+      "phone": "0123456789",
+      "address": "123 Street, City"
+    },
+    "cartItemIds": [1, 2]
+  }
+]
+```
+
+### Cancel Order
+
+**PUT** `/order/:orderId`
 
 **Headers**
 

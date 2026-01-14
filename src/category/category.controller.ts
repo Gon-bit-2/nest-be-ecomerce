@@ -4,6 +4,7 @@ import { isPublic } from 'src/shared/decorators/auth.decorator'
 import {
   CreateCategoryDTO,
   GetAllCategoriesQueryDTO,
+  GetAllCategoriesResDTO,
   GetCategoryDetailResDTO,
   GetCategoryParamsDTO,
   UpdateCategoryDTO,
@@ -18,7 +19,7 @@ export class CategoryController {
 
   @Get()
   @isPublic()
-  @ZodSerializerDto(GetCategoryDetailResDTO)
+  @ZodSerializerDto(GetAllCategoriesResDTO)
   findAll(@Query() query: GetAllCategoriesQueryDTO) {
     return this.categoryService.findAll({ parentCategoryId: query.parentCategoryId })
   }
