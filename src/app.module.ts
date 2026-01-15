@@ -22,6 +22,7 @@ import { CategoryModule } from './category/category.module'
 import { ProductModule } from './product/product.module'
 import { OrderModule } from './order/order.module'
 import { CartModule } from './cart/cart.module'
+import { PaymentModule } from './payment/payment.module';
 @Module({
   imports: [
     SharedModule,
@@ -47,6 +48,7 @@ import { CartModule } from './cart/cart.module'
     ProductModule,
     OrderModule,
     CartModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [
