@@ -14,6 +14,7 @@ export const OrderSchema = z.object({
   id: z.number(),
   userId: z.number(),
   shopId: z.number().nullable(),
+  paymentId: z.number(),
   status: OrderStatusSchema,
   receiver: z.object({
     name: z.string(),

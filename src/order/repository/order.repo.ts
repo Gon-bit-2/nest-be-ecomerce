@@ -16,6 +16,7 @@ import {
   SKUNotBeLongToShopException,
 } from '../order.error'
 import { ORDER_STATUS } from 'src/shared/constants/order.constant'
+import { PAYMENT_STATUS } from 'src/shared/constants/payment.constant'
 
 @Injectable()
 export class OrderRepo {
@@ -110,7 +111,12 @@ export class OrderRepo {
     }
     //5. Tạo order
     const orders = await this.prismaService.$transaction(async (tx) => {
-      const orders = await Promise.all(
+      const payment = await tx.payment.create({
+        data: {
+          status: PAYMENT_STATUS.PENDING,
+        },
+      })
+      const orders$ = Promise.all(
         body.map((item) =>
           tx.order.create({
             data: {
@@ -119,6 +125,7 @@ export class OrderRepo {
               shopId: item.shopId,
               receiver: item.receiver,
               createdById: userId,
+              paymentId: payment.id,
               items: {
                 create: item.cartItemIds.map((cartItemId) => {
                   const cartItem = cartItemMap.get(cartItemId)!
@@ -153,13 +160,28 @@ export class OrderRepo {
           }),
         ),
       )
-      await tx.cartItem.deleteMany({
+      const cartItem$ = tx.cartItem.deleteMany({
         where: {
           id: {
             in: allBodyCartItemIds,
           },
         },
       })
+      const sku$ = Promise.all(
+        cartItems.map((item) => {
+          return tx.sKU.update({
+            where: {
+              id: item.sku.id,
+            },
+            data: {
+              stock: {
+                decrement: item.quantity,
+              },
+            },
+          })
+        }),
+      )
+      const [orders] = await Promise.all([orders$, cartItem$, sku$])
       return orders
     })
     return {
