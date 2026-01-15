@@ -52,7 +52,7 @@ export class OrderRepo {
       totalPages: Math.ceil(totalItems / limit),
     }
   }
-  async create(userId, body: CreateOrderBodyType): Promise<CreateOrderBodyResType> {
+  async create(userId: number, body: CreateOrderBodyType): Promise<CreateOrderBodyResType> {
     //1. kiểm tra xem all cartItems có tồn tại in db
     const allBodyCartItemIds = body.map((item) => item.cartItemIds).flat()
     const cartItems = await this.prismaService.cartItem.findMany({
