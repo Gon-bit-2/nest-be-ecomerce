@@ -22,7 +22,9 @@ import { CategoryModule } from './category/category.module'
 import { ProductModule } from './product/product.module'
 import { OrderModule } from './order/order.module'
 import { CartModule } from './cart/cart.module'
-import { PaymentModule } from './payment/payment.module';
+import { PaymentModule } from './payment/payment.module'
+import { BullModule } from '@nestjs/bullmq'
+import envConfig from './shared/config'
 @Module({
   imports: [
     SharedModule,
@@ -49,6 +51,19 @@ import { PaymentModule } from './payment/payment.module';
     OrderModule,
     CartModule,
     PaymentModule,
+    BullModule.forRoot({
+      connection: {
+        /*local
+        host: 'localhost',
+        port: 6379,
+        */
+        //
+        host: 'redis-13584.c292.ap-southeast-1-1.ec2.cloud.redislabs.com',
+        port: 13584,
+        username: envConfig.REDIS_USERNAME,
+        password: envConfig.REDIS_PASSWORD,
+      },
+    }),
   ],
   controllers: [AppController],
   providers: [

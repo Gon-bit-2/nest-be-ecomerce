@@ -799,33 +799,28 @@ _No Body_
     },
     {
       "value": "Size",
-      "options": ["M", "L"]
+      "options": ["S", "M", "L"]
     }
   ],
   "skus": [
     {
-      "value": "Color-Red-Size-M",
+      "value": "Red - S",
       "price": 200000,
-      "stock": 50,
-      "image": "https://example.com/red-m.jpg"
+      "stock": 100,
+      "image": "https://example.com/red-s.jpg"
+    }
+    // ... more SKUs
+  ],
+  "productTranslations": [
+    {
+      "languageId": "vi",
+      "name": "Áo Thun Premium",
+      "description": "Mô tả sản phẩm"
     },
     {
-      "value": "Color-Red-Size-L",
-      "price": 200000,
-      "stock": 40,
-      "image": "https://example.com/red-l.jpg"
-    },
-    {
-      "value": "Color-Blue-Size-M",
-      "price": 200000,
-      "stock": 50,
-      "image": "https://example.com/blue-m.jpg"
-    },
-    {
-      "value": "Color-Blue-Size-L",
-      "price": 200000,
-      "stock": 40,
-      "image": "https://example.com/blue-l.jpg"
+      "languageId": "en",
+      "name": "Premium T-Shirt",
+      "description": "Product Description"
     }
   ]
 }
@@ -841,31 +836,8 @@ _No Body_
 
 ```json
 {
-  "publishedAt": "2023-10-27T00:00:00.000Z",
-  "name": "Áo Thun Premium Update",
-  "basePrice": 220000,
-  "virtualPrice": 320000,
-  "brandId": 1,
-  "categories": [1],
-  "images": ["https://example.com/product-image-1-new.jpg"],
-  "variants": [
-    {
-      "value": "Color",
-      "options": ["Red"]
-    },
-    {
-      "value": "Size",
-      "options": ["M"]
-    }
-  ],
-  "skus": [
-    {
-      "value": "Color-Red-Size-M",
-      "price": 220000,
-      "stock": 60,
-      "image": "https://example.com/red-m.jpg"
-    }
-  ]
+  // Same fields as Create Product, all optional
+  "name": "Updated Name"
 }
 ```
 
@@ -881,75 +853,20 @@ _No Body_
 
 ---
 
-## Product Translation Module
-
-### Get Product Translation Detail
-
-**GET** `/product-translation?productTranslationId=1`
-
-**Headers**
-
-- `Authorization`: `Bearer <accessToken>`
-
-_No Body_
-
-### Create Product Translation
-
-**POST** `/product-translation`
-
-**Headers**
-
-- `Authorization`: `Bearer <accessToken>`
-
-```json
-{
-  "productId": 1,
-  "languageId": "vi",
-  "name": "Áo Thun (Tiếng Việt)",
-  "description": "Mô tả áo thun"
-}
-```
-
-### Update Product Translation
-
-**PATCH** `/product-translation`
-
-**Headers**
-
-- `Authorization`: `Bearer <accessToken>`
-
-```json
-{
-  "productId": 1,
-  "languageId": "vi",
-  "name": "Áo Thun (TV Updated)",
-  "description": "Mô tả updated"
-}
-```
-
-### Delete Product Translation
-
-**DELETE** `/product-translation`
-
-**Headers**
-
-- `Authorization`: `Bearer <accessToken>`
-
-_No Body_
-
----
-
 ## Cart Module
 
-### List Cart Items
+### Get Cart
 
-**GET** `/cart?page=1&limit=10`
+**GET** `/cart`
 
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
 
-_No Body_
+**Query Params:**
+
+- `page`: number (default 1)
+- `limit`: number (default 10)
 
 ### Add to Cart
 
@@ -968,7 +885,9 @@ _No Body_
 
 ### Update Cart Item
 
-**PUT** `/cart/:cartItemId`
+**PUT** `/cart`
+
+_Note: Currently expects `cartItemId` via parameters but route definition may need adjustment to `/cart/:cartItemId` for strict REST compliance. Documenting as per current code which likely expects params._
 
 **Headers**
 
@@ -981,9 +900,7 @@ _No Body_
 }
 ```
 
-_Note: Ensure `cartItemId` is passed in the route._
-
-### Delete Cart Item
+### Delete Cart items
 
 **POST** `/cart/delete`
 
@@ -1001,18 +918,18 @@ _Note: Ensure `cartItemId` is passed in the route._
 
 ## Order Module
 
-### List Orders
+### Get Order List
 
-**GET** `/order?page=1&limit=10&status=PENDING_PAYMENT`
+**GET** `/order`
 
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
 
-_No Body_
-
 **Query Params:**
 
+- `page`: number (default 1)
+- `limit`: number (default 10)
 - `status`: "PENDING_PAYMENT" | "PENDING_PICKUP" | "PENDING_DELIVERY" | "DELIVERED" | "RETURNED" | "CANCELLED" (Optional)
 
 ### Get Order Detail
@@ -1038,9 +955,9 @@ _No Body_
   {
     "shopId": 1,
     "receiver": {
-      "name": "Receiver Name",
+      "name": "John Doe",
       "phone": "0123456789",
-      "address": "123 Street, City"
+      "address": "123 St, City"
     },
     "cartItemIds": [1, 2]
   }
@@ -1056,3 +973,34 @@ _No Body_
 - `Authorization`: `Bearer <accessToken>`
 
 _No Body_
+
+---
+
+## Payment Module
+
+### Webhook Receiver (SePay)
+
+**POST** `/payment/receiver`
+
+_No Auth Headers_ (Public Endpoint for Webhook)
+
+```json
+{
+  "id": 12345,
+  "gateway": "VCB",
+  "transactionDate": "2023-10-27 10:00:00",
+  "accountNumber": "0123456789",
+  "subAccount": null,
+  "amountIn": 0,
+  "amountOut": 0,
+  "accumulated": 0,
+  "code": "PAY123",
+  "transactionContent": "Thanh toan don hang",
+  "referenceNumber": null,
+  "body": null,
+  "transferType": "in", // or "out"
+  "transferAmount": 100000,
+  "referenceCode": null,
+  "description": "Full sms content"
+}
+```

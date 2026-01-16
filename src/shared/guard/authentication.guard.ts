@@ -4,7 +4,7 @@ import { AuthType } from 'src/shared/constants/auth.constant'
 import { AUTH_TYPE_KEY, AuthTypeDecoratorPayload } from 'src/shared/decorators/auth.decorator'
 import { ConditionGuard } from 'src/shared/decorators/custom-validator.decorator'
 import { AccessTokenGuard } from 'src/shared/guard/access-token.guard'
-import { XApiKeyGuard } from 'src/shared/guard/x-api-key.guard'
+import { PaymentApiKeyGuard } from './payment-api-key.guard'
 
 @Injectable()
 export class AuthenticationGuard implements CanActivate {
@@ -12,11 +12,11 @@ export class AuthenticationGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly accessTokenGuard: AccessTokenGuard,
-    private readonly apiKeyGuard: XApiKeyGuard,
+    private readonly paymentApiKeyGuard: PaymentApiKeyGuard,
   ) {
     this.authTypeGuardMap = {
       [AuthType.Bearer]: this.accessTokenGuard,
-      [AuthType.APIKey]: this.apiKeyGuard,
+      [AuthType.PaymentAPIKey]: this.paymentApiKeyGuard,
       [AuthType.None]: { canActivate: () => true },
     }
   }

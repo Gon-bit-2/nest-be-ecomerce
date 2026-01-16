@@ -4,6 +4,7 @@ export const AuthType = {
   Bearer: 'Bearer',
   None: 'None',
   APIKey: 'ApiKey',
+  PaymentAPIKey: 'PaymentAPIKey',
 } as const
 export type AuthTypeType = (typeof AuthType)[keyof typeof AuthType]
 export const ConditionGuard = {

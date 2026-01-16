@@ -6,7 +6,7 @@ import { JwtModule } from '@nestjs/jwt'
 import { ShareUserRepository } from 'src/shared/repositories/shared-user.repo'
 import { EmailService } from 'src/shared/service/email.service'
 import { AccessTokenGuard } from 'src/shared/guard/access-token.guard'
-import { XApiKeyGuard } from 'src/shared/guard/x-api-key.guard'
+import { PaymentApiKeyGuard } from 'src/shared/guard/payment-api-key.guard'
 import { TwoFactorAuthService } from './service/2fa.service'
 import { S3Service } from 'src/shared/service/s3.service'
 @Global()
@@ -20,7 +20,7 @@ import { S3Service } from 'src/shared/service/s3.service'
     ShareUserRepository,
     EmailService,
     AccessTokenGuard,
-    XApiKeyGuard,
+    PaymentApiKeyGuard,
   ],
   exports: [
     PrismaService,
@@ -31,7 +31,7 @@ import { S3Service } from 'src/shared/service/s3.service'
     ShareUserRepository,
     EmailService,
     AccessTokenGuard,
-    XApiKeyGuard,
+    PaymentApiKeyGuard,
   ],
   imports: [JwtModule],
 })
