@@ -17,10 +17,14 @@ import {
 } from '../order.error'
 import { ORDER_STATUS } from 'src/shared/constants/order.constant'
 import { PAYMENT_STATUS } from 'src/shared/constants/payment.constant'
+import { OrderProducer } from '../queue/order.producer'
 
 @Injectable()
 export class OrderRepo {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly orderProducer: OrderProducer,
+  ) {}
 
   async list(userId: number, query: GetOrderListQueryType) {
     const { limit, page, status } = query
@@ -187,7 +191,8 @@ export class OrderRepo {
           })
         }),
       )
-      const [orders] = await Promise.all([orders$, cartItem$, sku$])
+      const addCancelPaymentJob$ = this.orderProducer.addCancelPaymentJob(payment.id)
+      const [orders] = await Promise.all([orders$, cartItem$, sku$, addCancelPaymentJob$])
       return [payment.id, orders]
     })
     return {
