@@ -25,6 +25,7 @@ import { CartModule } from './cart/cart.module'
 import { PaymentModule } from './payment/payment.module'
 import { BullModule } from '@nestjs/bullmq'
 import envConfig from './shared/config'
+import { PaymentConsumer } from './queues/payment.consumer'
 @Module({
   imports: [
     SharedModule,
@@ -78,6 +79,7 @@ import envConfig from './shared/config'
     },
     { provide: APP_INTERCEPTOR, useClass: ZodSerializerInterceptor },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
+    PaymentConsumer,
   ],
 })
 export class AppModule {}

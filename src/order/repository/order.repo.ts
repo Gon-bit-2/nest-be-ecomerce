@@ -53,7 +53,13 @@ export class OrderRepo {
       totalPages: Math.ceil(totalItems / limit),
     }
   }
-  async create(userId: number, body: CreateOrderBodyType): Promise<CreateOrderBodyResType> {
+  async create(
+    userId: number,
+    body: CreateOrderBodyType,
+  ): Promise<{
+    paymentId: number
+    orders: CreateOrderBodyResType['data']
+  }> {
     //1. kiểm tra xem all cartItems có tồn tại in db
     const allBodyCartItemIds = body.map((item) => item.cartItemIds).flat()
     const cartItems = await this.prismaService.cartItem.findMany({
@@ -110,7 +116,7 @@ export class OrderRepo {
       throw SKUNotBeLongToShopException
     }
     //5. Tạo order
-    const orders = await this.prismaService.$transaction(async (tx) => {
+    const [paymentId, orders] = await this.prismaService.$transaction(async (tx) => {
       const payment = await tx.payment.create({
         data: {
           status: PAYMENT_STATUS.PENDING,
@@ -182,10 +188,11 @@ export class OrderRepo {
         }),
       )
       const [orders] = await Promise.all([orders$, cartItem$, sku$])
-      return orders
+      return [payment.id, orders]
     })
     return {
-      data: orders,
+      paymentId,
+      orders,
     }
   }
   async detail(userId: number, orderId: number): Promise<GetOrderDetailResType> {

@@ -3,7 +3,6 @@ import { SKUSchemaType } from 'src/shared/model/shared-sku.model'
 import { PrismaService } from 'src/shared/service/prisma.service'
 import {
   InvalidQuantityException,
-  NotFoundCartException,
   NotFoundSKUException,
   OutOfStockSKUException,
   ProductNotFoundException,
@@ -57,10 +56,8 @@ export class CartRepo {
     if (!sku) {
       throw NotFoundSKUException
     }
-    if (!cartItem) {
-      throw NotFoundCartException
-    }
-    if (isCreate && quantity + cartItem.quantity > sku.stock) {
+
+    if (cartItem && isCreate && quantity + cartItem.quantity > sku.stock) {
       throw InvalidQuantityException
     }
     //kiểm tra số lượng
