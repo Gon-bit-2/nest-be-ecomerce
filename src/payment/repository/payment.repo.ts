@@ -1,12 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/shared/service/prisma.service'
 import { WebhookPaymentBodyType } from '../model/payment.model'
-import { MessageResType } from 'src/shared/model/response.model'
 import { parse } from 'date-fns'
 import { PAYMENT_CODE_PREFIX } from 'src/shared/constants/other.constant'
 import { OrderIncludeProductSKUSnapshotType } from 'src/shared/model/shared-order.model'
 import { ORDER_STATUS } from 'src/shared/constants/order.constant'
 import { PAYMENT_STATUS } from 'src/shared/constants/payment.constant'
+import { MessageResType } from 'src/shared/model/response.model'
 
 @Injectable()
 export class PaymentRepo {
@@ -20,7 +20,11 @@ export class PaymentRepo {
       return total + orderTotal
     }, 0)
   }
-  async receiver(body: WebhookPaymentBodyType): Promise<MessageResType> {
+  async receiver(body: WebhookPaymentBodyType): Promise<
+    MessageResType & {
+      paymentId: number
+    }
+  > {
     //1. thêm thông tin giao dịch vào db
     let amountIn = 0
     let amountOut = 0
@@ -93,7 +97,8 @@ export class PaymentRepo {
       }),
     ])
     return {
-      message: 'Payment success',
+      paymentId: payment.id,
+      message: 'Payment Success',
     }
   }
 }

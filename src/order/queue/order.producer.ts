@@ -7,7 +7,10 @@ import { generateCancelPaymentJobId } from 'src/shared/helpers'
 @Injectable()
 export class OrderProducer {
   constructor(@InjectQueue(PAYMENT_QUEUE_NAME) private paymentQueue: Queue) {}
-
+  /**
+   * @description Add cancel payment job to queue
+   * @param paymentId
+   */
   async addCancelPaymentJob(paymentId: number) {
     await this.paymentQueue.add(
       CANCEL_PAYMENT_JOB_NAME,
@@ -15,7 +18,7 @@ export class OrderProducer {
         paymentId,
       },
       {
-        delay: 1000 * 20,
+        delay: 1000 * 60 * 60 * 24,
         jobId: generateCancelPaymentJobId(paymentId),
         removeOnComplete: true,
         removeOnFail: true,

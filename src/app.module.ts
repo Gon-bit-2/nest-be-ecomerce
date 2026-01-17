@@ -63,6 +63,7 @@ import { PaymentConsumer } from './queues/payment.consumer'
         port: 13584,
         username: envConfig.REDIS_USERNAME,
         password: envConfig.REDIS_PASSWORD,
+        maxRetriesPerRequest: null, // Bắt buộc: để BullMQ tự xử lý retry thay vì Redis client
       },
     }),
   ],
