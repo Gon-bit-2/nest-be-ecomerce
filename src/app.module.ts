@@ -26,6 +26,7 @@ import { PaymentModule } from './payment/payment.module'
 import { BullModule } from '@nestjs/bullmq'
 import envConfig from './shared/config'
 import { PaymentConsumer } from './queues/payment.consumer'
+import { WebsocketModule } from 'websockets/webscoket.module'
 @Module({
   imports: [
     SharedModule,
@@ -66,6 +67,7 @@ import { PaymentConsumer } from './queues/payment.consumer'
         maxRetriesPerRequest: null, // Bắt buộc: để BullMQ tự xử lý retry thay vì Redis client
       },
     }),
+    WebsocketModule,
   ],
   controllers: [AppController],
   providers: [

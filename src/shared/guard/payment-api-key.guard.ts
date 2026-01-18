@@ -1,17 +1,15 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common'
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common'
 import { Request } from 'express'
 import envConfig from 'src/shared/config'
-import { TokenService } from 'src/shared/service/token.service'
 
 @Injectable()
 export class PaymentApiKeyGuard implements CanActivate {
-  constructor(private readonly tokenService: TokenService) {}
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>()
-    const paymentApiKey = request.headers['x-api-key']
+    const paymentApiKey = request.get('Authorization')?.split(' ')[1]
 
-    if (paymentApiKey !== envConfig.API_KEY_SECRET) {
-      return false
+    if (paymentApiKey !== envConfig.PAYMENT_API_KEY) {
+      throw new UnauthorizedException()
     }
 
     return true
