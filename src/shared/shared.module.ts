@@ -10,6 +10,7 @@ import { PaymentApiKeyGuard } from 'src/shared/guard/payment-api-key.guard'
 import { TwoFactorAuthService } from './service/2fa.service'
 import { S3Service } from 'src/shared/service/s3.service'
 import { SharedPaymentRepository } from './repositories/shared-payment.repo'
+import { SharedWebsocketRepository } from './repositories/shared-websocket.repo'
 @Global()
 @Module({
   providers: [
@@ -20,6 +21,7 @@ import { SharedPaymentRepository } from './repositories/shared-payment.repo'
     TwoFactorAuthService,
     ShareUserRepository,
     SharedPaymentRepository,
+    SharedWebsocketRepository,
     EmailService,
     AccessTokenGuard,
     PaymentApiKeyGuard,
@@ -32,6 +34,7 @@ import { SharedPaymentRepository } from './repositories/shared-payment.repo'
     TwoFactorAuthService,
     ShareUserRepository,
     SharedPaymentRepository,
+    SharedWebsocketRepository,
     EmailService,
     AccessTokenGuard,
     PaymentApiKeyGuard,
