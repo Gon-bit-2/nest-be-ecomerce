@@ -15,3 +15,7 @@ export const generateOTP = () => {
 export const generateCancelPaymentJobId = (paymentId: number) => {
   return `cancel-payment-${paymentId}`
 }
+
+export const generateRoomUserId = (userId: number) => {
+  return `user-${userId}`
+}

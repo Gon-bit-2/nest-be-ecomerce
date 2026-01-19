@@ -62,7 +62,7 @@ export class OrderRepo {
     body: CreateOrderBodyType,
   ): Promise<{
     paymentId: number
-    orders: CreateOrderBodyResType['data']
+    orders: CreateOrderBodyResType['orders']
   }> {
     //1. kiểm tra xem all cartItems có tồn tại in db
     const allBodyCartItemIds = body.map((item) => item.cartItemIds).flat()

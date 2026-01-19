@@ -6,7 +6,6 @@ import { PAYMENT_CODE_PREFIX } from 'src/shared/constants/other.constant'
 import { OrderIncludeProductSKUSnapshotType } from 'src/shared/model/shared-order.model'
 import { ORDER_STATUS } from 'src/shared/constants/order.constant'
 import { PAYMENT_STATUS } from 'src/shared/constants/payment.constant'
-import { MessageResType } from 'src/shared/model/response.model'
 import { PaymentProducer } from '../queue/payment.producer'
 
 @Injectable()
@@ -24,7 +23,7 @@ export class PaymentRepo {
       return total + orderTotal
     }, 0)
   }
-  async receiver(body: WebhookPaymentBodyType): Promise<MessageResType> {
+  async receiver(body: WebhookPaymentBodyType): Promise<number> {
     //1. thêm thông tin giao dịch vào db
     let amountIn = 0
     let amountOut = 0
@@ -41,7 +40,7 @@ export class PaymentRepo {
     if (paymentTransaction) {
       throw new BadRequestException('Payment Transaction already exists')
     }
-    await this.prismaService.$transaction(async (tx) => {
+    const userId = await this.prismaService.$transaction(async (tx) => {
       await tx.paymentTransaction.create({
         data: {
           id: body.id,
@@ -80,6 +79,7 @@ export class PaymentRepo {
       if (!payment) {
         throw new BadRequestException(`Payment not found with id ${paymentId}`)
       }
+      const userId = payment.order[0].userId
       const { order } = payment
       const totalPrice = this.getTotalPrice(order)
       if (totalPrice !== body.transferAmount) {
@@ -108,10 +108,8 @@ export class PaymentRepo {
         }),
         this.paymentProducer.removeJob(payment.id),
       ])
-      return payment.id
+      return userId
     })
-    return {
-      message: 'Payment Success',
-    }
+    return userId
   }
 }
