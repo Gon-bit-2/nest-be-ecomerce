@@ -27,6 +27,8 @@ import { BullModule } from '@nestjs/bullmq'
 import envConfig from './shared/config'
 import { PaymentConsumer } from './queues/payment.consumer'
 import { WebsocketModule } from 'websockets/webscoket.module'
+import { ThrottlerModule } from '@nestjs/throttler'
+import { ThrottlerBehindProxyGuard } from './shared/guard/throttler-behind-proxy.guard'
 @Module({
   imports: [
     SharedModule,
@@ -67,6 +69,14 @@ import { WebsocketModule } from 'websockets/webscoket.module'
         maxRetriesPerRequest: null, // Bắt buộc: để BullMQ tự xử lý retry thay vì Redis client
       },
     }),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 60000,
+          limit: 10,
+        },
+      ],
+    }),
     WebsocketModule,
   ],
   controllers: [AppController],
@@ -75,6 +85,11 @@ import { WebsocketModule } from 'websockets/webscoket.module'
     {
       provide: APP_GUARD,
       useClass: AuthenticationGuard,
+    },
+
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerBehindProxyGuard,
     },
     {
       provide: APP_PIPE,

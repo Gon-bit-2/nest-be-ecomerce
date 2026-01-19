@@ -11,7 +11,7 @@ async function bootstrap() {
   const websocketAdapter = new WebsocketAdapter(app)
   await websocketAdapter.connectToRedis()
   app.useWebSocketAdapter(websocketAdapter)
-
+  app.set('trust proxy', 'loopback')
   const config = new DocumentBuilder()
     .setTitle('Ecomerce API Documentation')
     .setDescription('API documentation for Ecomerce application')

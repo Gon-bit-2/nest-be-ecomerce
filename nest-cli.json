@@ -7,7 +7,16 @@
     "builder": "webpack",
     "strictNullChecks": true,
     "esModuleInterop": true,
-    "assets": [{ "include": "i18n/**/*", "watchAssets": true }]
+    "assets": [{ "include": "i18n/**/*", "watchAssets": true }],
+    "plugins": [
+      {
+        "name": "@nestjs/swagger",
+        "options": {
+          "introspectComments": true,
+          "classValidatorShim": true
+        }
+      }
+    ]
   },
   "generateOptions": {
     "spec": false
