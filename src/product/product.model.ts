@@ -99,6 +99,7 @@ export const CreateProductBodySchema = ProductSchema.pick({
   variants: true,
 })
   .extend({
+    publishedAt: z.string().datetime().nullable().optional(), // Override kiểu Date thành string
     categories: z.array(z.coerce.number().int().positive()),
     skus: z.array(UpsertSKUBodySchema),
   })

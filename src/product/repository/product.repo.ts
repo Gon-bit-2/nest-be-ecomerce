@@ -207,10 +207,11 @@ export class ProductRepo {
     createdById: number
     data: CreateProductBodyType
   }): Promise<GetProductDetailResType> {
-    const { skus, categories, ...productData } = data
+    const { skus, categories, publishedAt, ...productData } = data
     return this.prismaService.product.create({
       data: {
         ...productData,
+        publishedAt: publishedAt ? new Date(publishedAt) : null,
         createdById,
         categories: {
           connect: categories.map((category) => ({ id: category })),
@@ -321,6 +322,7 @@ export class ProductRepo {
         },
         data: {
           ...productData,
+          publishedAt: productData.publishedAt ? new Date(productData.publishedAt) : null,
           updatedById,
           categories: {
             connect: categories.map((category) => ({ id: category })),
