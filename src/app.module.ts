@@ -29,6 +29,7 @@ import { PaymentConsumer } from './queues/payment.consumer'
 import { WebsocketModule } from 'websockets/webscoket.module'
 import { ThrottlerModule } from '@nestjs/throttler'
 import { ThrottlerBehindProxyGuard } from './shared/guard/throttler-behind-proxy.guard'
+import { ReviewModule } from './review/review.module'
 @Module({
   imports: [
     SharedModule,
@@ -78,6 +79,7 @@ import { ThrottlerBehindProxyGuard } from './shared/guard/throttler-behind-proxy
       ],
     }),
     WebsocketModule,
+    ReviewModule,
   ],
   controllers: [AppController],
   providers: [

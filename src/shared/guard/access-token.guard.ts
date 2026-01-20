@@ -25,7 +25,7 @@ export class AccessTokenGuard implements CanActivate {
     const accessToken = this.extractTokenFromHeader(request)
     try {
       const decodedAccessToken = await this.tokenService.verifyAccessToken(accessToken)
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
       request[REQUEST_USER_KEY] = decodedAccessToken
       return decodedAccessToken
     } catch {
@@ -33,7 +33,7 @@ export class AccessTokenGuard implements CanActivate {
     }
   }
   private extractTokenFromHeader(request: any): string {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     const accessToken = request.headers.authorization?.split(' ')[1]
     if (!accessToken) {
       throw new UnauthorizedException('Error.MissingAccessToken')
