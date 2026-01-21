@@ -53,6 +53,10 @@ export const GetOrderParamsSchema = z
   })
   .strict()
 
+export const UpdateOrderStatusSchema = z.object({
+  status: z.enum([ORDER_STATUS.DELIVERED, ORDER_STATUS.RETURNED]),
+})
+
 export type GetOrderListResType = z.infer<typeof GetOrderListResSchema>
 export type GetOrderListQueryType = z.infer<typeof GetOrderListQuerySchema>
 export type GetOrderDetailResType = z.infer<typeof GetOrderDetailResSchema>
@@ -60,9 +64,4 @@ export type GetOrderParamsType = z.infer<typeof GetOrderParamsSchema>
 export type CreateOrderBodyType = z.infer<typeof CreateOrderBodySchema>
 export type CreateOrderBodyResType = z.infer<typeof CreateOrderBodyResSchema>
 export type CancelOrderResType = z.infer<typeof CancelOrderResSchema>
-
-export const UpdateOrderStatusSchema = z.object({
-  status: z.enum([ORDER_STATUS.DELIVERED, ORDER_STATUS.RETURNED]),
-})
-
 export type UpdateOrderStatusType = z.infer<typeof UpdateOrderStatusSchema>
