@@ -8,6 +8,7 @@ import {
   GetOrderListQueryDTO,
   GetOrderListResDTO,
   GetOrderParamsDTO,
+  UpdateOrderStatusDTO,
 } from './dto/order.dto'
 import { ActiveUser } from 'src/shared/decorators/active-user.decorator'
 import { ZodSerializerDto } from 'nestjs-zod'
@@ -36,5 +37,15 @@ export class OrderController {
   @ZodSerializerDto(CancelOrderResDTO)
   async cancel(@ActiveUser('userId') userId: number, @Param() param: GetOrderParamsDTO) {
     return this.orderService.cancel(userId, param.orderId)
+  }
+
+  @Post(':orderId/status')
+  @ZodSerializerDto(CancelOrderResDTO)
+  async updateStatus(
+    @ActiveUser('userId') userId: number,
+    @Param() param: GetOrderParamsDTO,
+    @Body() body: UpdateOrderStatusDTO,
+  ) {
+    return this.orderService.updateStatus(userId, param.orderId, body)
   }
 }

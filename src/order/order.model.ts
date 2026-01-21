@@ -1,4 +1,5 @@
 import { PaginationQuerySchema } from 'src/shared/model/request.model'
+import { ORDER_STATUS } from 'src/shared/constants/order.constant'
 import { OrderSchema, OrderStatusSchema, ProductSKUSnapshotSchema } from 'src/shared/model/shared-order.model'
 import z from 'zod'
 
@@ -59,3 +60,9 @@ export type GetOrderParamsType = z.infer<typeof GetOrderParamsSchema>
 export type CreateOrderBodyType = z.infer<typeof CreateOrderBodySchema>
 export type CreateOrderBodyResType = z.infer<typeof CreateOrderBodyResSchema>
 export type CancelOrderResType = z.infer<typeof CancelOrderResSchema>
+
+export const UpdateOrderStatusSchema = z.object({
+  status: z.enum([ORDER_STATUS.DELIVERED, ORDER_STATUS.RETURNED]),
+})
+
+export type UpdateOrderStatusType = z.infer<typeof UpdateOrderStatusSchema>

@@ -7,6 +7,7 @@ import {
   CreateOrderBodyType,
   GetOrderDetailResType,
   GetOrderListQueryType,
+  UpdateOrderStatusType,
 } from '../order.model'
 import {
   CanNotCancelOrderException,
@@ -14,6 +15,7 @@ import {
   OrdetNotFoundException,
   OutOfStockSKUException,
   SKUNotBeLongToShopException,
+  InvalidOrderStatusTransitionException,
 } from '../order.error'
 import { ORDER_STATUS } from 'src/shared/constants/order.constant'
 import { PAYMENT_STATUS } from 'src/shared/constants/payment.constant'
@@ -215,6 +217,38 @@ export class OrderRepo {
       throw OrdetNotFoundException
     }
     return order
+  }
+  async updateStatus(orderId: number, userId: number, body: UpdateOrderStatusType) {
+    const order = await this.prismaService.order.findUnique({
+      where: {
+        id: orderId,
+        userId,
+        deletedAt: null,
+      },
+    })
+    if (!order) {
+      throw OrdetNotFoundException
+    }
+
+    if (body.status === ORDER_STATUS.DELIVERED) {
+      if (order.status !== ORDER_STATUS.PENDING_DELIVERY) {
+        throw InvalidOrderStatusTransitionException
+      }
+    } else if (body.status === ORDER_STATUS.RETURNED) {
+      if (order.status !== ORDER_STATUS.DELIVERED) {
+        throw InvalidOrderStatusTransitionException
+      }
+    }
+
+    return this.prismaService.order.update({
+      where: {
+        id: orderId,
+      },
+      data: {
+        status: body.status,
+        updatedById: userId,
+      },
+    })
   }
   async cancel(userId: number, orderId: number): Promise<CancelOrderResType> {
     try {
