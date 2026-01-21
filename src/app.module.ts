@@ -30,6 +30,7 @@ import { WebsocketModule } from 'websockets/webscoket.module'
 import { ThrottlerModule } from '@nestjs/throttler'
 import { ThrottlerBehindProxyGuard } from './shared/guard/throttler-behind-proxy.guard'
 import { ReviewModule } from './review/review.module'
+import { ScheduleModule } from '@nestjs/schedule'
 @Module({
   imports: [
     SharedModule,
@@ -80,6 +81,7 @@ import { ReviewModule } from './review/review.module'
     }),
     WebsocketModule,
     ReviewModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [
