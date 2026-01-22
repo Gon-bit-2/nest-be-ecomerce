@@ -80,7 +80,7 @@ export class AuthRepository {
   async findUniqueVerificationCode(uniqueObject: { email: string; code: string; type: TypeOfVerificationCodeType }) {
     return await this.prismaService.verificationCode.findUnique({
       where: {
-        email_code_type: uniqueObject,
+        email_type: uniqueObject,
       },
     })
   }

@@ -42,9 +42,8 @@ export class AuthService {
   async register(body: RegisterBodyType) {
     try {
       const verificationCode = await this.verificationCodeRepository.findUniqueVerificationCode({
-        email_code_type: {
+        email_type: {
           email: body.email,
-          code: body.code,
           type: TypeOfVerificationCode.REGISTER,
         },
       })
@@ -73,9 +72,8 @@ export class AuthService {
           roleId: clientRoleId,
         }),
         this.verificationCodeRepository.deleteVerificationCode({
-          email_code_type: {
+          email_type: {
             email: body.email,
-            code: body.code,
             type: TypeOfVerificationCode.REGISTER,
           },
         }),
@@ -334,9 +332,8 @@ export class AuthService {
     await Promise.all([
       this.shareUserRepository.update({ id: user.id }, { password: hashedPassword, updatedById: user.id }),
       this.verificationCodeRepository.deleteVerificationCode({
-        email_code_type: {
+        email_type: {
           email: body.email,
-          code: body.code,
           type: TypeOfVerificationCode.FORGOT_PASSWORD,
         },
       }),
