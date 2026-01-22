@@ -31,6 +31,7 @@ import { ThrottlerModule } from '@nestjs/throttler'
 import { ThrottlerBehindProxyGuard } from './shared/guard/throttler-behind-proxy.guard'
 import { ReviewModule } from './review/review.module'
 import { ScheduleModule } from '@nestjs/schedule'
+import { CacheModule } from '@nestjs/cache-manager'
 @Module({
   imports: [
     SharedModule,
@@ -82,6 +83,9 @@ import { ScheduleModule } from '@nestjs/schedule'
     WebsocketModule,
     ReviewModule,
     ScheduleModule.forRoot(),
+    CacheModule.register({
+      isGlobal: true,
+    }),
   ],
   controllers: [AppController],
   providers: [
