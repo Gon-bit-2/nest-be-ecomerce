@@ -1,0 +1,30 @@
+import z from 'zod'
+import { DISCOUNT_APPLY_TO, DISCOUNT_SCOPE, DISCOUNT_TYPE } from 'src/shared/constants/discount.constant'
+
+export const DiscountSchema = z.object({
+  id: z.number(),
+  shopId: z.number().nullable(),
+  productIds: z.array(z.number()).default([]),
+  categoryIds: z.array(z.number()).default([]),
+  userId: z.number().nullable(),
+  name: z.string().min(1, 'Name is required'),
+  value: z.number().min(1, 'Value is required'),
+  type: z.enum(DISCOUNT_TYPE),
+  scope: z.enum(DISCOUNT_SCOPE),
+  code: z.string().min(1, 'Code is required'),
+  description: z.string().min(1, 'Description is required'),
+  maxTotalUses: z.number().default(0),
+  applyTo: z.enum(DISCOUNT_APPLY_TO),
+  maxUsesPerUser: z.number().default(0),
+  useCount: z.number().default(0),
+  minOrderValue: z.number().default(0),
+  isActive: z.boolean().default(false),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+  createdById: z.number().nullable(),
+  updatedById: z.number().nullable(),
+  deletedById: z.number().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  deletedAt: z.date().nullable(),
+})

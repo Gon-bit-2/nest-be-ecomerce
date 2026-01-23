@@ -32,6 +32,7 @@ import { ThrottlerBehindProxyGuard } from './shared/guard/throttler-behind-proxy
 import { ReviewModule } from './review/review.module'
 import { ScheduleModule } from '@nestjs/schedule'
 import { CacheModule } from '@nestjs/cache-manager'
+import { DiscountModule } from './discount/discount.module'
 @Module({
   imports: [
     SharedModule,
@@ -86,6 +87,7 @@ import { CacheModule } from '@nestjs/cache-manager'
     CacheModule.register({
       isGlobal: true,
     }),
+    DiscountModule,
   ],
   controllers: [AppController],
   providers: [
