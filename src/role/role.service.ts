@@ -3,7 +3,7 @@ import { RoleRepo } from './role.repo'
 import { CreateRoleBodyType, GetRoleQueryType, UpdateRoleBodyType } from './role.model'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 import roleName from 'src/shared/constants/role.constant'
-import { CACHE_MANAGER } from '@nestjs/cache-manager'
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager'
 
 @Injectable()
 export class RoleService {
@@ -62,7 +62,7 @@ export class RoleService {
       if (!role) {
         throw new NotFoundException('Role not found')
       }
-      await this.cacheManager.delete(`roleId:${role.id}`)
+      await this.cacheManager.del(`roleId:${role.id}`)
       //không cho phép bất kì ai cập nhập role Admin
       if (role.name === roleName.Admin) {
         throw new ForbiddenException('You can wait update this role')
@@ -85,7 +85,7 @@ export class RoleService {
       if (!role) {
         throw new NotFoundException('Role not found')
       }
-      await this.cacheManager.delete(`roleId:${role.id}`)
+      await this.cacheManager.del(`roleId:${role.id}`)
       //không cho phép bất kì ai xóa 3 role cơ bản
       if ([roleName.Admin, roleName.Client, roleName.Seller].includes(role.name)) {
         throw new ForbiddenException('You can not delete this role')

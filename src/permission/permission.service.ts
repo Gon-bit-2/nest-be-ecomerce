@@ -2,7 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common'
 import { PermissionRepo } from './repository/permission.repo'
 import { CreatePermissionBodyType, GetPermissionsQueryType, UpdatePermissionBodyType } from './permission.model'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/binary'
-import { CACHE_MANAGER } from '@nestjs/cache-manager'
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager'
 
 @Injectable()
 export class PermissionService {
@@ -66,7 +66,7 @@ export class PermissionService {
     await Promise.all(
       roles.map((role) => {
         const cacheKey = `roleId:${role.id}`
-        return this.cacheManager.delete(cacheKey)
+        return this.cacheManager.del(cacheKey)
       }),
     )
   }

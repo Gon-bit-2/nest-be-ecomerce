@@ -32,6 +32,7 @@ import { ThrottlerBehindProxyGuard } from './shared/guard/throttler-behind-proxy
 import { ReviewModule } from './review/review.module'
 import { ScheduleModule } from '@nestjs/schedule'
 import { CacheModule } from '@nestjs/cache-manager'
+import { createKeyv } from '@keyv/redis'
 import { DiscountModule } from './discount/discount.module'
 @Module({
   imports: [
@@ -84,8 +85,17 @@ import { DiscountModule } from './discount/discount.module'
     WebsocketModule,
     ReviewModule,
     ScheduleModule.forRoot(),
-    CacheModule.register({
+    CacheModule.registerAsync({
       isGlobal: true,
+      useFactory: () => {
+        return {
+          stores: [
+            createKeyv(
+              'redis://default:mzhZWXojb8f47R0SpTP1tba0beFwEuVN@redis-13584.c292.ap-southeast-1-1.ec2.cloud.redislabs.com:13584',
+            ),
+          ],
+        }
+      },
     }),
     DiscountModule,
   ],
