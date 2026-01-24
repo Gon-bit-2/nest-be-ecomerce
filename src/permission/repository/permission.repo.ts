@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/shared/service/prisma.service'
 import { CreatePermissionBodyType, GetPermissionsQueryType, UpdatePermissionBodyType } from '../permission.model'
+import { PermissionType } from 'src/shared/model/share-permission.model'
 
 @Injectable()
 export class PermissionRepo {
@@ -47,7 +48,21 @@ export class PermissionRepo {
     })
     return permission
   }
-  async update({ id, updatedById, data }: { id: number; updatedById: number | null; data: UpdatePermissionBodyType }) {
+  async update({
+    id,
+    updatedById,
+    data,
+  }: {
+    id: number
+    updatedById: number | null
+    data: UpdatePermissionBodyType
+  }): Promise<
+    PermissionType & {
+      roles: {
+        id: number
+      }[]
+    }
+  > {
     const permission = await this.prismaService.permission.update({
       where: {
         id,
@@ -57,14 +72,29 @@ export class PermissionRepo {
         ...data,
         updatedById,
       },
+      include: {
+        roles: true,
+      },
     })
     return permission
   }
-  async delete({ id, deletedById }: { id: number; deletedById: number | null }, isHard?: boolean) {
+  async delete(
+    { id, deletedById }: { id: number; deletedById: number | null },
+    isHard?: boolean,
+  ): Promise<
+    PermissionType & {
+      roles: {
+        id: number
+      }[]
+    }
+  > {
     return isHard
       ? this.prismaService.permission.delete({
           where: {
             id,
+          },
+          include: {
+            roles: true,
           },
         })
       : this.prismaService.permission.update({
@@ -75,6 +105,9 @@ export class PermissionRepo {
           data: {
             deletedAt: new Date(),
             deletedById,
+          },
+          include: {
+            roles: true,
           },
         })
   }
