@@ -3,13 +3,13 @@ import { DiscountService } from './discount.service'
 import { GetDiscountListDTO, GetDiscountListResDTO, GetDiscountParamsDTO } from './dto/discount.dto'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { ActiveUser } from 'src/shared/decorators/active-user.decorator'
-import { isPublic } from 'src/shared/decorators/auth.decorator'
+import { IsAdmin } from 'src/shared/decorators/roles.decorator'
 @Controller('discount')
 export class DiscountController {
   constructor(private readonly discountService: DiscountService) {}
 
   @Get()
-  @isPublic()
+  @IsAdmin()
   @ZodSerializerDto(GetDiscountListResDTO)
   async list(@Query() pagination: GetDiscountListDTO) {
     return this.discountService.list(pagination)
