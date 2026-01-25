@@ -6,6 +6,8 @@ import {
   GetDiscountListDTO,
   GetDiscountListResDTO,
   GetDiscountParamsDTO,
+  PreviewDiscountBodyDTO,
+  PreviewDiscountResBodyDTO,
   UpdateDiscountBodyDTO,
   UpdateDiscountResBodyDTO,
 } from './dto/discount.dto'
@@ -56,12 +58,18 @@ export class DiscountController {
     @Body() body: UpdateDiscountBodyDTO,
     @ActiveUser('userId') userId: number,
   ) {
-    return this.discountService.update({ discountId: param.discountId, body, updatedById: userId })
+    return this.discountService.update({ discountId: param.discountId, body, updatedById: userId, createdById: userId })
   }
 
   @Delete(':discountId')
   @IsSeller()
   async delete(@Param() param: GetDiscountParamsDTO, @ActiveUser('userId') userId: number) {
     return this.discountService.delete({ discountId: param.discountId, deletedById: userId })
+  }
+
+  @Post('preview')
+  @ZodSerializerDto(PreviewDiscountResBodyDTO)
+  async preview(@Body() body: PreviewDiscountBodyDTO) {
+    return this.discountService.preview(body)
   }
 }

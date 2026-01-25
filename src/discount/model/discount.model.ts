@@ -109,6 +109,14 @@ export const ApplyDiscountSchema = z.object({
     }),
   ),
 })
+// Preview/Review Discount (Giống Apply nhưng dùng cho API Preview riêng biệt)
+export const PreviewDiscountSchema = ApplyDiscountSchema
+export const PreviewDiscountResSchema = z.object({
+  isValid: z.boolean(),
+  discountAmount: z.number(),
+  finalPrice: z.number(),
+  message: z.string().optional(),
+})
 
 export type DiscountType = z.infer<typeof DiscountSchema>
 export type CreateDiscountBodyType = z.infer<typeof CreateDiscountSchema>
@@ -119,3 +127,5 @@ export type GetDiscountListType = z.infer<typeof GetDiscountListSchema>
 export type GetDiscountListResType = z.infer<typeof GetDiscountListResSchema>
 export type GetDiscountParamsType = z.infer<typeof GetDiscountParamsSchema>
 export type ApplyDiscountType = z.infer<typeof ApplyDiscountSchema>
+export type PreviewDiscountType = z.infer<typeof PreviewDiscountSchema>
+export type PreviewDiscountResType = z.infer<typeof PreviewDiscountResSchema>

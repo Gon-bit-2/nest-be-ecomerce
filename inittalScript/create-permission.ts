@@ -127,6 +127,7 @@ const updateRole = async (permissionIds: { id: number }[], roleName: string) => 
       deletedAt: null,
     },
   })
+  console.log(`Updated Role: ${role.name}, ID: ${role.id}`)
   await prisma.role.update({
     where: {
       id: role.id,

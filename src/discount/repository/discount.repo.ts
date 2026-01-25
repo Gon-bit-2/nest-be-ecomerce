@@ -1,14 +1,17 @@
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
 import {
   CreateDiscountBodyResType,
   CreateDiscountBodyType,
   GetDiscountListResType,
   GetDiscountListType,
+  PreviewDiscountResType,
+  PreviewDiscountType,
   UpdateDiscountBodyType,
   UpdateDiscountResBodyType,
 } from '../model/discount.model'
 import { PrismaService } from 'src/shared/service/prisma.service'
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 
 @Injectable()
 export class DiscountRepo {
@@ -183,45 +186,61 @@ export class DiscountRepo {
     body: CreateDiscountBodyType
     createdById: number
   }): Promise<CreateDiscountBodyResType> {
-    const { productIds, categoryIds, ...data } = body
-    const discount = await this.prismaService.discount.create({
-      data: {
-        ...data,
-        products: {
-          create: productIds?.map((id) => ({
-            product: { connect: { id } },
-          })),
+    try {
+      const { productIds, categoryIds, ...data } = body
+      const discount = await this.prismaService.discount.create({
+        data: {
+          ...data,
+          products: {
+            create: productIds?.map((id) => ({
+              product: { connect: { id } },
+            })),
+          },
+          categories: {
+            create: categoryIds?.map((id) => ({
+              category: { connect: { id } },
+            })),
+          },
+          createdById,
         },
-        categories: {
-          create: categoryIds?.map((id) => ({
-            category: { connect: { id } },
-          })),
+        include: {
+          products: true,
+          categories: true,
         },
-        createdById,
-      },
-      include: {
-        products: true,
-        categories: true,
-      },
-    })
-    return {
-      ...discount,
-      productIds: discount.products.map((product) => product.productId),
-      categoryIds: discount.categories.map((category) => category.categoryId),
+      })
+      return {
+        ...discount,
+        productIds: discount.products.map((product) => product.productId),
+        categoryIds: discount.categories.map((category) => category.categoryId),
+      }
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2003') {
+          throw new BadRequestException('Mã giảm giá không tồn tại')
+        }
+      }
+      throw error
     }
   }
   async update({
     discountId,
     body,
     updatedById,
+    createdById,
   }: {
     discountId: number
     body: UpdateDiscountBodyType
+    createdById: number
     updatedById: number
   }): Promise<UpdateDiscountResBodyType> {
     const { productIds: newProductIds, categoryIds: newCategoryIds, ...data } = body
 
     const result = await this.prismaService.$transaction(async (tx) => {
+      //Check discount tồn tại
+      const discount = await tx.discount.findUnique({ where: { id: discountId }, select: { shopId: true } })
+      if (!discount) {
+        throw new NotFoundException('Mã giảm giá không tồn tại')
+      }
       // A. XỬ LÝ PRODUCTS
       if (newProductIds) {
         // A1. Lấy danh sách ID hiện tại trong DB
@@ -273,7 +292,7 @@ export class DiscountRepo {
 
       // C. UPDATE THÔNG TIN CƠ BẢN
       return tx.discount.update({
-        where: { id: discountId },
+        where: { id: discountId, shopId: createdById },
         data: {
           ...data,
           updatedById,
@@ -292,6 +311,34 @@ export class DiscountRepo {
       categoryIds: result.categories.map((c) => c.categoryId),
     }
   }
+
+  async save({ discountId, userId }: { discountId: number; userId: number }) {
+    // 1. Kiểm tra mã có hợp lệ để lưu không?
+    const discount = await this.prismaService.discount.findUnique({
+      where: { id: discountId, deletedAt: null, isActive: true, endDate: { gte: new Date() } },
+    })
+
+    if (!discount) {
+      throw new NotFoundException('Mã giảm giá không tồn tại hoặc đã bị khóa')
+    }
+    // 2. Thử tạo bản ghi (Dùng thủ thuật connectOrCreate hoặc check exist)
+    // Cách đơn giản nhất để tránh lỗi Duplicate Key là check trước
+    const existing = await this.prismaService.userSavedDiscount.findUnique({
+      where: { userId_discountId: { userId, discountId } },
+    })
+
+    if (existing) {
+      return existing // Đã lưu rồi thì trả về luôn, coi như thành công (Idempotency)
+    }
+    // 3. Lưu mới
+    return this.prismaService.userSavedDiscount.create({
+      data: {
+        discountId,
+        userId,
+      },
+    })
+  }
+
   async delete(
     {
       discountId,
@@ -318,5 +365,101 @@ export class DiscountRepo {
             deletedAt: new Date(),
           },
         })
+  }
+
+  // --- Helper for Preview/Apply ---
+  async findByCode(code: string) {
+    return this.prismaService.discount.findUnique({
+      where: {
+        code,
+        deletedAt: null,
+        isActive: true,
+      },
+      include: {
+        products: true, // Lấy list sản phẩm áp dụng
+        categories: true, // Lấy list danh mục áp dụng
+      },
+    })
+  }
+
+  async countUsageByUser(discountId: number, userId: number) {
+    return this.prismaService.discountUsage.count({
+      where: {
+        discountId,
+        userId,
+      },
+    })
+  }
+  async preview(body: PreviewDiscountType): Promise<PreviewDiscountResType> {
+    const { code, userId, items, orderValue } = body
+
+    // 1. Lấy thông tin mã
+    const discount = await this.findByCode(code)
+    if (!discount) throw new BadRequestException('Mã không tồn tại hoặc không khả dụng')
+
+    // 2. Check ngày
+    const now = new Date()
+    if (now < discount.startDate || now > discount.endDate) {
+      throw new BadRequestException('Mã chưa bắt đầu hoặc đã hết hạn')
+    }
+
+    // 3. Check số lượng tổng
+    if (discount.maxTotalUses > 0 && discount.useCount >= discount.maxTotalUses) {
+      throw new BadRequestException('Mã đã hết lượt sử dụng')
+    }
+
+    // 4. Check user usage
+    const userUsage = await this.countUsageByUser(discount.id, userId)
+    if (discount.maxUsesPerUser > 0 && userUsage >= discount.maxUsesPerUser) {
+      throw new BadRequestException('Bạn đã dùng hết lượt mã này')
+    }
+
+    // 5. Check Min Order
+    if (orderValue < discount.minOrderValue) {
+      throw new BadRequestException(`Đơn hàng tối thiểu phải từ ${discount.minOrderValue}`)
+    }
+
+    // 6. Tính toán số tiền được giảm (Logic Scope)
+    let applicableAmount = 0
+
+    if (discount.applyTo === 'ALL') {
+      applicableAmount = orderValue
+    } else {
+      // Lọc item hợp lệ
+      const validProductIds = discount.products.map((p) => p.productId)
+      const validCategoryIds = discount.categories.map((c) => c.categoryId)
+
+      for (const item of items) {
+        const isProductValid = validProductIds.includes(item.productId)
+        // Nếu FE không gửi categoryId thì coi như không match category (trừ khi BE tự lookup Product -> Category - việc này tốn query nên tạm thời FE gửi)
+        const isCategoryValid = item.categoryId && validCategoryIds.includes(item.categoryId)
+
+        if (isProductValid || isCategoryValid) {
+          applicableAmount += item.price * item.quantity
+        }
+      }
+    }
+
+    if (applicableAmount === 0) {
+      throw new BadRequestException('Mã không áp dụng cho sản phẩm nào trong giỏ hàng')
+    }
+
+    // 7. Final Calc
+    let discountAmount = 0
+    if (discount.type === 'FIXED_AMOUNT') {
+      discountAmount = discount.value
+    } else if (discount.type === 'PERCENTAGE') {
+      discountAmount = (applicableAmount * discount.value) / 100
+      // TODO: Check maxDiscountValue nếu có (hiện tại schema chưa có trường này)
+    }
+
+    const finalDiscount = Math.min(discountAmount, orderValue) // Không giảm quá tiền đơn
+
+    return {
+      isValid: true,
+      discountAmount: finalDiscount,
+      finalPrice: orderValue - finalDiscount,
+      message: 'Áp dụng mã thành công',
+    }
   }
 }

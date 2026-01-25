@@ -1004,3 +1004,173 @@ _No Auth Headers_ (Public Endpoint for Webhook)
   "description": "Full sms content"
 }
 ```
+
+---
+
+## Discount Module
+
+### List Discounts (Admin)
+
+**GET** `/discount?page=1&limit=10`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+**Query Params:**
+
+- `page`: number (default 1)
+- `limit`: number (default 10)
+- `search`: string (optional)
+- `type`: "FIXED" | "PERCENTAGE" (optional)
+- `scope`: "GLOBAL" | "SHOP" (optional)
+- `isActive`: boolean (optional)
+- `shopId`: number (optional)
+
+### List Available Discounts
+
+**GET** `/discount/available?page=1&limit=10`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+### List My Vouchers
+
+**GET** `/discount/my-vouchers?page=1&limit=10`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+### Get Discount Detail
+
+**GET** `/discount/:discountId`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+### Create Discount (Seller)
+
+**POST** `/discount`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+{
+  "shopId": 1,
+  "productIds": [1, 2],
+  "categoryIds": [1],
+  "name": "Summer Sale",
+  "value": 10,
+  "type": "PERCENTAGE", // FIXED, PERCENTAGE
+  "scope": "SHOP", // GLOBAL, SHOP
+  "code": "SUMMER10",
+  "description": "10% off for summer",
+  "maxTotalUses": 100,
+  "applyTo": "ORDER", // ORDER, SPECIFIC_PRODUCT
+  "maxUsesPerUser": 1,
+  "minOrderValue": 100000,
+  "isActive": true,
+  "startDate": "2023-11-01T00:00:00.000Z",
+  "endDate": "2023-11-30T23:59:59.000Z"
+}
+```
+
+### Update Discount (Seller)
+
+**PUT** `/discount/:discountId`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+{
+  "name": "Summer Sale Updated",
+  "value": 15
+}
+```
+
+### Delete Discount (Seller)
+
+**DELETE** `/discount/:discountId`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+### Preview Discount
+
+**POST** `/discount/preview`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+{
+  "code": "SUMMER10",
+  "orderValue": 200000,
+  "userId": 1,
+  "shopId": 1,
+  "items": [
+    {
+      "productId": 1,
+      "price": 100000,
+      "quantity": 2
+    }
+  ]
+}
+```
+
+---
+
+## Review Module
+
+### List Reviews
+
+**GET** `/review/product/:productId?page=1&limit=10`
+
+_No Auth Headers_
+
+### Create Review
+
+**POST** `/review`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+{
+  "content": "Great product!",
+  "rating": 5,
+  "orderId": 1,
+  "productId": 1,
+  "medias": [
+    {
+      "url": "https://example.com/review.jpg",
+      "type": "IMAGE" // IMAGE, VIDEO
+    }
+  ]
+}
+```
+
+### Update Review
+
+**PUT** `/review/:reviewId`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+{
+  "content": "Updated review content",
+  "rating": 4
+}
+```

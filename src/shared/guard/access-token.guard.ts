@@ -66,7 +66,8 @@ export class AccessTokenGuard implements CanActivate {
     const method = request.method as keyof typeof HTTPMethod
     //
     let cachedRole = await this.cacheManager.get<CachedRole>(cacheKey)
-    if (cachedRole === null) {
+
+    if (!cachedRole) {
       const role = await this.prismaService.role
         .findUniqueOrThrow({
           where: {
@@ -89,6 +90,7 @@ export class AccessTokenGuard implements CanActivate {
         role.permissions,
         (permission) => `${permission.path}_${permission.method}`,
       ) as CachedRole['permissions']
+
       cachedRole = {
         ...role,
         permissions: permissionObject,
