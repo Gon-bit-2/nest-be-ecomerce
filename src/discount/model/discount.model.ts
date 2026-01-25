@@ -3,10 +3,10 @@ import { DISCOUNT_APPLY_TO, DISCOUNT_SCOPE, DISCOUNT_TYPE } from 'src/shared/con
 
 export const DiscountSchema = z.object({
   id: z.number(),
-  shopId: z.number().optional(),
+  shopId: z.number().nullish(),
   productIds: z.array(z.number()).default([]),
   categoryIds: z.array(z.number()).default([]),
-  userId: z.number().optional(),
+  userId: z.number().nullish(),
   name: z.string().min(1, 'Name is required'),
   value: z.number().min(1, 'Value is required'),
   type: z.enum(DISCOUNT_TYPE),
@@ -30,6 +30,9 @@ export const DiscountSchema = z.object({
 })
 
 export const CreateDiscountSchema = DiscountSchema.pick({
+  shopId: true,
+  productIds: true,
+  categoryIds: true,
   name: true,
   value: true,
   type: true,
@@ -48,7 +51,11 @@ export const CreateDiscountSchema = DiscountSchema.pick({
   path: ['endDate'],
 })
 
-export const UpdateDiscountSchema = CreateDiscountSchema
+export const CreateDiscountResSchema = DiscountSchema
+export const UpdateDiscountSchema = CreateDiscountSchema.partial().omit({
+  code: true,
+})
+
 export const GetDiscountListResSchema = z.object({
   data: z.array(
     DiscountSchema.pick({
@@ -83,6 +90,11 @@ export const GetDiscountListSchema = z.object({
   isActive: z.coerce.boolean().optional(),
   shopId: z.coerce.number().optional(), // Lọc voucher của shop nào
 })
+export const GetDiscountParamsSchema = z
+  .object({
+    discountId: z.coerce.number().int().positive(),
+  })
+  .strict()
 export const ApplyDiscountSchema = z.object({
   code: z.string(),
   orderValue: z.number(),
@@ -100,7 +112,9 @@ export const ApplyDiscountSchema = z.object({
 
 export type DiscountType = z.infer<typeof DiscountSchema>
 export type CreateDiscountType = z.infer<typeof CreateDiscountSchema>
+export type CreateDiscountResType = z.infer<typeof CreateDiscountResSchema>
 export type UpdateDiscountType = z.infer<typeof UpdateDiscountSchema>
 export type GetDiscountListType = z.infer<typeof GetDiscountListSchema>
 export type GetDiscountListResType = z.infer<typeof GetDiscountListResSchema>
+export type GetDiscountParamsType = z.infer<typeof GetDiscountParamsSchema>
 export type ApplyDiscountType = z.infer<typeof ApplyDiscountSchema>

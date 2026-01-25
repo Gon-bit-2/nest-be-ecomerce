@@ -9,8 +9,18 @@ import { AppModule } from 'src/app.module'
 import { PrismaService } from 'src/shared/service/prisma.service'
 import roleName, { HTTPMethod } from 'src/shared/constants/role.constant'
 
-const SellerModule = ['AUTH', 'MEDIA', 'MANAGE-PRODUCT', 'PRODUCT-TRANSLATION', 'PROFILE', 'CART', 'ORDER', 'PAYMENT']
-const ClientModule = ['AUTH', 'PROFILE', 'MEDIA', 'CART', 'ORDER', 'PAYMENT', 'REVIEW']
+const SellerModule = [
+  'AUTH',
+  'MEDIA',
+  'MANAGE-PRODUCT',
+  'PRODUCT-TRANSLATION',
+  'PROFILE',
+  'CART',
+  'ORDER',
+  'PAYMENT',
+  'DISCOUNT',
+]
+const ClientModule = ['AUTH', 'PROFILE', 'MEDIA', 'CART', 'ORDER', 'PAYMENT', 'REVIEW', 'DISCOUNT']
 
 const prisma = new PrismaService()
 async function bootstrap() {

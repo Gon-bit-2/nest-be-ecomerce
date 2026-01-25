@@ -91,6 +91,7 @@ model User {
   sentMessages                Message[]             @relation("FromUser")
   receivedMessages            Message[]             @relation("ToUser")
   websockets                  Websocket[]
+  savedDiscounts              UserSavedDiscount[]
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
   // Tự quan hệ 1-n
@@ -481,8 +482,9 @@ model Discount {
   startDate      DateTime
   endDate        DateTime
 
-  products   DiscountsOnProducts[]
-  categories DiscountsOnCategories[]
+  products     DiscountsOnProducts[]
+  categories   DiscountsOnCategories[]
+  savedByUsers UserSavedDiscount[]
 
   shopId Int?
   shop   User? @relation("ShopDiscounts", fields: [shopId], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -537,6 +539,17 @@ model DiscountsOnCategories {
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@id([discountId, categoryId])
+}
+
+model UserSavedDiscount {
+  userId     Int
+  discountId Int
+  savedAt    DateTime @default(now())
+  isUsed     Boolean  @default(false)
+  user       User     @relation(fields: [userId], references: [id])
+  discount   Discount @relation(fields: [discountId], references: [id])
+
+  @@id([userId, discountId])
 }
 
 model Review {
