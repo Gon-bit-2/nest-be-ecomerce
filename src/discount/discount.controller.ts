@@ -1,9 +1,17 @@
-import { Controller, Get, Param, Query } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { DiscountService } from './discount.service'
-import { GetDiscountListDTO, GetDiscountListResDTO, GetDiscountParamsDTO } from './dto/discount.dto'
+import {
+  CreateDiscountBodyDTO,
+  CreateDiscountResBodyDTO,
+  GetDiscountListDTO,
+  GetDiscountListResDTO,
+  GetDiscountParamsDTO,
+  UpdateDiscountBodyDTO,
+  UpdateDiscountResBodyDTO,
+} from './dto/discount.dto'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { ActiveUser } from 'src/shared/decorators/active-user.decorator'
-import { IsAdmin } from 'src/shared/decorators/roles.decorator'
+import { IsAdmin, IsSeller } from 'src/shared/decorators/roles.decorator'
 @Controller('discount')
 export class DiscountController {
   constructor(private readonly discountService: DiscountService) {}
@@ -31,5 +39,29 @@ export class DiscountController {
   @ZodSerializerDto(GetDiscountListResDTO)
   async detail(@Param() param: GetDiscountParamsDTO) {
     return this.discountService.detail(param.discountId)
+  }
+
+  @Post()
+  @IsSeller()
+  @ZodSerializerDto(CreateDiscountResBodyDTO)
+  async create(@Body() body: CreateDiscountBodyDTO, @ActiveUser('userId') userId: number) {
+    return this.discountService.create({ body, createdById: userId })
+  }
+
+  @Put(':discountId')
+  @IsSeller()
+  @ZodSerializerDto(UpdateDiscountResBodyDTO)
+  async update(
+    @Param() param: GetDiscountParamsDTO,
+    @Body() body: UpdateDiscountBodyDTO,
+    @ActiveUser('userId') userId: number,
+  ) {
+    return this.discountService.update({ discountId: param.discountId, body, updatedById: userId })
+  }
+
+  @Delete(':discountId')
+  @IsSeller()
+  async delete(@Param() param: GetDiscountParamsDTO, @ActiveUser('userId') userId: number) {
+    return this.discountService.delete({ discountId: param.discountId, deletedById: userId })
   }
 }

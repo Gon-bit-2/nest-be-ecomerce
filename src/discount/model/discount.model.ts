@@ -111,9 +111,10 @@ export const ApplyDiscountSchema = z.object({
 })
 
 export type DiscountType = z.infer<typeof DiscountSchema>
-export type CreateDiscountType = z.infer<typeof CreateDiscountSchema>
-export type CreateDiscountResType = z.infer<typeof CreateDiscountResSchema>
-export type UpdateDiscountType = z.infer<typeof UpdateDiscountSchema>
+export type CreateDiscountBodyType = z.infer<typeof CreateDiscountSchema>
+export type CreateDiscountBodyResType = z.infer<typeof CreateDiscountResSchema>
+export type UpdateDiscountBodyType = z.infer<typeof UpdateDiscountSchema>
+export type UpdateDiscountResBodyType = CreateDiscountBodyResType
 export type GetDiscountListType = z.infer<typeof GetDiscountListSchema>
 export type GetDiscountListResType = z.infer<typeof GetDiscountListResSchema>
 export type GetDiscountParamsType = z.infer<typeof GetDiscountParamsSchema>

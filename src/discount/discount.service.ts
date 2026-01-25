@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { DiscountRepo } from './repository/discount.repo'
-import { GetDiscountListType } from './model/discount.model'
+import { CreateDiscountBodyType, GetDiscountListType, UpdateDiscountBodyType } from './model/discount.model'
 
 @Injectable()
 export class DiscountService {
@@ -19,5 +19,22 @@ export class DiscountService {
   }
   async detail(discountId: number) {
     return this.discountRepo.detail(discountId)
+  }
+  async create({ body, createdById }: { body: CreateDiscountBodyType; createdById: number }) {
+    return this.discountRepo.create({ body, createdById })
+  }
+  async update({
+    discountId,
+    body,
+    updatedById,
+  }: {
+    discountId: number
+    body: UpdateDiscountBodyType
+    updatedById: number
+  }) {
+    return this.discountRepo.update({ discountId, body, updatedById })
+  }
+  async delete({ discountId, deletedById }: { discountId: number; deletedById: number }) {
+    return this.discountRepo.delete({ discountId, deletedById })
   }
 }

@@ -14,6 +14,7 @@ export class DiscountDTO extends createZodDto(DiscountSchema) {}
 export class CreateDiscountBodyDTO extends createZodDto(CreateDiscountSchema) {}
 export class CreateDiscountResBodyDTO extends createZodDto(CreateDiscountResSchema) {}
 export class UpdateDiscountBodyDTO extends createZodDto(UpdateDiscountSchema) {}
+export class UpdateDiscountResBodyDTO extends CreateDiscountResBodyDTO {}
 export class GetDiscountListDTO extends createZodDto(GetDiscountListSchema) {}
 export class GetDiscountListResDTO extends createZodDto(GetDiscountListResSchema) {}
 export class ApplyDiscountDTO extends createZodDto(ApplyDiscountSchema) {}
