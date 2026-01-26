@@ -6,5 +6,6 @@ import { DiscountRepo } from './repository/discount.repo'
 @Module({
   controllers: [DiscountController],
   providers: [DiscountService, DiscountRepo],
+  exports: [DiscountRepo], // Export để OrderModule có thể sử dụng
 })
 export class DiscountModule {}
