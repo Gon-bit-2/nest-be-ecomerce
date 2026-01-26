@@ -91,7 +91,7 @@ import { DiscountModule } from './discount/discount.module'
         return {
           stores: [
             createKeyv(
-              'redis://default:mzhZWXojb8f47R0SpTP1tba0beFwEuVN@redis-13584.c292.ap-southeast-1-1.ec2.cloud.redislabs.com:13584',
+              `redis://${envConfig.REDIS_USERNAME}:${envConfig.REDIS_PASSWORD}@redis-13584.c292.ap-southeast-1-1.ec2.cloud.redislabs.com:${envConfig.REDIS_PORT}`,
             ),
           ],
         }
