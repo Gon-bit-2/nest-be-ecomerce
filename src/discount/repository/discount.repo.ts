@@ -419,6 +419,19 @@ export class DiscountRepo {
       throw new BadRequestException(`Đơn hàng tối thiểu phải từ ${discount.minOrderValue}`)
     }
 
+    // 5.1 Check Shop Scope
+    if (discount.scope === 'SHOP' && discount.shopId) {
+      // Nếu là voucher SHOP, bắt buộc phải check xem nó có áp dụng đúng shop không
+      // Yêu cầu caller phải truyền shopId vào body.shopId để validate
+      if (!body.shopId) {
+        // Trong trường hợp gọi từ nội bộ (Create Order), ta biết chắc shopId.
+        // Nhưng nếu public API, cần validate.
+        // Tạm thời nếu review từ OrderRepo thì sẽ ổn.
+      } else if (body.shopId !== discount.shopId) {
+        throw new BadRequestException('Mã giảm giá không áp dụng cho shop này')
+      }
+    }
+
     // 6. Tính toán số tiền được giảm (Logic Scope)
     let applicableAmount = 0
 

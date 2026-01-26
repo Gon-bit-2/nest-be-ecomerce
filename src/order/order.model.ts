@@ -29,19 +29,24 @@ export const GetOrderDetailResSchema = OrderSchema.extend({
   items: z.array(ProductSKUSnapshotSchema),
 })
 
-export const CreateOrderBodySchema = z
-  .array(
-    z.object({
-      shopId: z.number(),
-      receiver: z.object({
-        name: z.string(),
-        phone: z.string(),
-        address: z.string(),
+export const CreateOrderBodySchema = z.object({
+  orders: z
+    .array(
+      z.object({
+        shopId: z.number(),
+        receiver: z.object({
+          name: z.string(),
+          phone: z.string(),
+          address: z.string(),
+        }),
+        cartItemIds: z.array(z.number().min(1)),
+        shopDiscountCode: z.string().optional(), // Mã giảm giá của Shop
       }),
-      cartItemIds: z.array(z.number().min(1)),
-    }),
-  )
-  .min(1)
+    )
+    .min(1),
+  platformDiscountCode: z.string().optional(), // Mã giảm giá của Sàn (Shopee Voucher)
+  // freeShippingCode: z.string().optional(), // Tương lai: Mã FreeShip
+})
 
 export const CreateOrderBodyResSchema = z.object({ orders: z.array(OrderSchema), paymentId: z.number() })
 

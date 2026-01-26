@@ -20,12 +20,14 @@ import {
 import { ORDER_STATUS } from 'src/shared/constants/order.constant'
 import { PAYMENT_STATUS } from 'src/shared/constants/payment.constant'
 import { OrderProducer } from '../queue/order.producer'
+import { DiscountRepo } from 'src/discount/repository/discount.repo'
 
 @Injectable()
 export class OrderRepo {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly orderProducer: OrderProducer,
+    private readonly discountRepo: DiscountRepo,
   ) {}
 
   async list(userId: number, query: GetOrderListQueryType) {
@@ -66,13 +68,13 @@ export class OrderRepo {
     paymentId: number
     orders: CreateOrderBodyResType['orders']
   }> {
-    //1. kiểm tra xem all cartItems có tồn tại in db
-    const allBodyCartItemIds = body.map((item) => item.cartItemIds).flat()
+    const { orders: bodyOrders, platformDiscountCode } = body
+
+    // 1. Kiểm tra xem all cartItems có tồn tại in db
+    const allBodyCartItemIds = bodyOrders.map((item) => item.cartItemIds).flat()
     const cartItems = await this.prismaService.cartItem.findMany({
       where: {
-        id: {
-          in: allBodyCartItemIds,
-        },
+        id: { in: allBodyCartItemIds },
         userId,
       },
       include: {
@@ -81,56 +83,153 @@ export class OrderRepo {
             product: {
               include: {
                 productTranslations: true,
+                categories: true,
               },
             },
           },
         },
       },
     })
+
     if (cartItems.length !== allBodyCartItemIds.length) {
       throw NotFoundCartItemException
     }
-    //2. kiểm tra số lượng mua có lớn hơn ? sl tồn
-    const isOutOfStock = cartItems.some((item) => {
-      return item.sku.stock < item.quantity
-    })
-    if (isOutOfStock) {
-      throw OutOfStockSKUException
-    }
-    //3. kiểm tra sản phẩm mua có sp đã bị xóa hay ẩn
+
+    // 2. Validate Stock & Rules
+    const isOutOfStock = cartItems.some((item) => item.sku.stock < item.quantity)
+    if (isOutOfStock) throw OutOfStockSKUException
+
     const isExitsNotReadyProduct = cartItems.some((item) => {
-      return (
-        item.sku.product.deletedAt !== null ||
-        item.sku.product.publishedAt === null ||
-        item.sku.product.publishedAt > new Date()
-      )
+      const prod = item.sku.product
+      return prod.deletedAt !== null || prod.publishedAt === null || prod.publishedAt > new Date()
     })
-    if (isExitsNotReadyProduct) {
-      throw NotFoundCartItemException
-    }
-    //4. kiểm tra các skuId trong cartItems gửi lên có thuộc về shopId gửi lên không
+    if (isExitsNotReadyProduct) throw NotFoundCartItemException
+
+    // 3. Validate Shop Ownership
     const cartItemMap = new Map<number, (typeof cartItems)[0]>()
     cartItems.forEach((item) => cartItemMap.set(item.id, item))
-    const isValidShop = body.every((item) => {
-      const bodyCartItemIds = item.cartItemIds
-      return bodyCartItemIds.every((cartItemId) => {
+
+    const isValidShop = bodyOrders.every((item) => {
+      return item.cartItemIds.every((cartItemId) => {
         const cartItem = cartItemMap.get(cartItemId)!
         return item.shopId === cartItem.sku.createdById
       })
     })
-    if (!isValidShop) {
-      throw SKUNotBeLongToShopException
+    if (!isValidShop) throw SKUNotBeLongToShopException
+
+    // --- LOGIC DISCOUNT ---
+
+    // Data structures để lưu kết quả tính toán
+    const shopOrderCalculations: Array<{
+      orderIndex: number
+      shopId: number
+      originalTotal: number
+      shopDiscountAmount: number
+      shopDiscountId?: number
+      subTotalAfterShopDiscount: number // Dùng để tính Platform Discount
+      platformDiscountAmount: number // Số tiền được giảm từ Voucher sàn (phân bổ)
+      platformDiscountId?: number
+      items: any[]
+    }> = []
+
+    let totalSubTotalForPlatform = 0
+
+    // 4. Phase 1: Tính toán Shop Discount cho từng order
+    for (let i = 0; i < bodyOrders.length; i++) {
+      const orderBody = bodyOrders[i]
+      const orderCartItems = orderBody.cartItemIds.map((id) => cartItemMap.get(id)!)
+
+      const items = orderCartItems.map((item) => ({
+        productId: item.sku.productId,
+        categoryId: item.sku.product.categories[0]?.id,
+        price: item.sku.price,
+        quantity: item.quantity,
+      }))
+
+      const originalTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+      let shopDiscountAmount = 0
+      let shopDiscountId: number | undefined
+
+      // Apply Shop Discount
+      if (orderBody.shopDiscountCode) {
+        const preview = await this.discountRepo.preview({
+          code: orderBody.shopDiscountCode,
+          userId,
+          orderValue: originalTotal,
+          items,
+          shopId: orderBody.shopId, // Validate shop scope
+        })
+        shopDiscountAmount = preview.discountAmount
+        const discount = await this.discountRepo.findByCode(orderBody.shopDiscountCode)
+        shopDiscountId = discount?.id
+      }
+
+      const subTotal = Math.max(0, originalTotal - shopDiscountAmount)
+
+      shopOrderCalculations.push({
+        orderIndex: i,
+        shopId: orderBody.shopId,
+        originalTotal,
+        shopDiscountAmount,
+        shopDiscountId,
+        subTotalAfterShopDiscount: subTotal,
+        platformDiscountAmount: 0, // Tính sau
+        items,
+      })
+
+      totalSubTotalForPlatform += subTotal
     }
-    //5. Tạo order
+
+    // 5. Phase 2: Apply Platform Discount (Voucher Sàn)
+    let platformDiscountId: number | undefined
+    if (platformDiscountCode && totalSubTotalForPlatform > 0) {
+      // Gom tất cả items của tất cả shop để check platform voucher
+      const allItems = shopOrderCalculations.flatMap((c) => c.items)
+
+      const previewPlatform = await this.discountRepo.preview({
+        code: platformDiscountCode,
+        userId,
+        orderValue: totalSubTotalForPlatform, // Giá trị đơn hàng sau khi trừ Shop Voucher
+        items: allItems,
+      })
+
+      const totalPlatformDiscount = previewPlatform.discountAmount
+      const discount = await this.discountRepo.findByCode(platformDiscountCode)
+      platformDiscountId = discount?.id
+
+      if (totalPlatformDiscount > 0) {
+        // Allocation: Phân bổ giảm giá sàn vào từng order
+        let distributed = 0
+
+        for (let i = 0; i < shopOrderCalculations.length; i++) {
+          const calc = shopOrderCalculations[i]
+
+          if (i === shopOrderCalculations.length - 1) {
+            // Cái cuối cùng nhận phần dư để tránh lỗi làm tròn
+            calc.platformDiscountAmount = Math.max(0, totalPlatformDiscount - distributed)
+          } else {
+            const ratio = calc.subTotalAfterShopDiscount / totalSubTotalForPlatform
+            const amount = Math.floor(totalPlatformDiscount * ratio) // Làm tròn xuống
+            calc.platformDiscountAmount = amount
+            distributed += amount
+          }
+          calc.platformDiscountId = platformDiscountId
+        }
+      }
+    }
+
+    // 6. Transaction: Save Order & Update DB
     const [paymentId, orders] = await this.prismaService.$transaction(async (tx) => {
       const payment = await tx.payment.create({
-        data: {
-          status: PAYMENT_STATUS.PENDING,
-        },
+        data: { status: PAYMENT_STATUS.PENDING },
       })
-      const orders$ = Promise.all(
-        body.map((item) =>
-          tx.order.create({
+
+      const createdOrders = await Promise.all(
+        bodyOrders.map(async (item, index) => {
+          const calc = shopOrderCalculations[index]
+
+          // Tạo Order
+          const order = await tx.order.create({
             data: {
               userId,
               status: ORDER_STATUS.PENDING_PAYMENT,
@@ -149,54 +248,95 @@ export class OrderRepo {
                     skuValue: cartItem.sku.value,
                     quantity: cartItem.quantity,
                     productId: cartItem.sku.productId,
-                    productTranslations: cartItem.sku.product.productTranslations.map((translation) => {
-                      return {
-                        id: translation.id,
-                        name: translation.name,
-                        description: translation.description,
-                        languageId: translation.languageId,
-                      }
-                    }),
+                    productTranslations: cartItem.sku.product.productTranslations.map((t) => ({
+                      id: t.id,
+                      name: t.name,
+                      description: t.description,
+                      languageId: t.languageId,
+                    })),
                   }
                 }),
               },
               product: {
-                connect: item.cartItemIds.map((cartItemId) => {
-                  const cartItem = cartItemMap.get(cartItemId)!
-                  return {
-                    id: cartItem.sku.productId,
-                  }
-                }),
-              },
-            },
-          }),
-        ),
-      )
-      const cartItem$ = tx.cartItem.deleteMany({
-        where: {
-          id: {
-            in: allBodyCartItemIds,
-          },
-        },
-      })
-      const sku$ = Promise.all(
-        cartItems.map((item) => {
-          return tx.sKU.update({
-            where: {
-              id: item.sku.id,
-            },
-            data: {
-              stock: {
-                decrement: item.quantity,
+                connect: item.cartItemIds.map((cartItemId) => ({
+                  id: cartItemMap.get(cartItemId)!.sku.productId,
+                })),
               },
             },
           })
+
+          // Lưu Discount Usage - Shop Voucher
+          if (calc.shopDiscountId && calc.shopDiscountAmount > 0) {
+            await tx.discountUsage.create({
+              data: {
+                discountId: calc.shopDiscountId,
+                userId,
+                orderId: order.id,
+                discountAmount: calc.shopDiscountAmount,
+              },
+            })
+            // Increment usage
+            await tx.discount.update({
+              where: { id: calc.shopDiscountId },
+              data: { useCount: { increment: 1 } },
+            })
+            // Mark as used
+            await tx.userSavedDiscount.updateMany({
+              where: { userId, discountId: calc.shopDiscountId },
+              data: { isUsed: true },
+            })
+          }
+
+          // Lưu Discount Usage - Platform Voucher
+          if (calc.platformDiscountId && calc.platformDiscountAmount > 0) {
+            await tx.discountUsage.create({
+              data: {
+                discountId: calc.platformDiscountId,
+                userId,
+                orderId: order.id,
+                discountAmount: calc.platformDiscountAmount,
+              },
+            })
+            // Platform useCount tăng 1 lần cho cả giao dịch hay 1 lần cho mỗi order con?
+            // Logic Shopee: Mã code đc dùng 1 lần cho cả cụm.
+            // Nếu ta increment trong loop này thì sẽ tăng N lần (N = số shop order).
+            // => Move logic increment ra ngoài loop hoặc check flag.
+          }
+
+          return order
         }),
       )
-      const addCancelPaymentJob$ = this.orderProducer.addCancelPaymentJob(payment.id)
-      const [orders] = await Promise.all([orders$, cartItem$, sku$, addCancelPaymentJob$])
-      return [payment.id, orders]
+
+      // Update Platform Voucher Usage (Once per transaction)
+      if (platformDiscountId) {
+        await tx.discount.update({
+          where: { id: platformDiscountId },
+          data: { useCount: { increment: 1 } },
+        })
+        await tx.userSavedDiscount.updateMany({
+          where: { userId, discountId: platformDiscountId },
+          data: { isUsed: true },
+        })
+      }
+
+      // Cleanup Cart & Stock
+      await tx.cartItem.deleteMany({
+        where: { id: { in: allBodyCartItemIds } },
+      })
+
+      const skuUpdates = cartItems.map((item) =>
+        tx.sKU.update({
+          where: { id: item.sku.id },
+          data: { stock: { decrement: item.quantity } },
+        }),
+      )
+      await Promise.all(skuUpdates)
+
+      await this.orderProducer.addCancelPaymentJob(payment.id) // Fire & Forget (or await if need safe)
+
+      return [payment.id, createdOrders]
     })
+
     return {
       paymentId,
       orders,
