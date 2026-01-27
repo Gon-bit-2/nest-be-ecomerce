@@ -13,6 +13,7 @@ import {
   RefreshTokenBodyType,
   RegisterBodyType,
   SendOTPBodyType,
+  VerifyOTPBodyType,
 } from 'src/auth/auth.model'
 import { AuthRepository } from 'src/auth/repository/auth.repository'
 import { VerificationCodeRepository } from 'src/auth/repository/verificationCode.repo'
@@ -126,6 +127,16 @@ export class AuthService {
     }
     return {
       message: 'Gửi Mã Otp thành công',
+    }
+  }
+  async verifyOTP(body: VerifyOTPBodyType) {
+    await this.validateVerificationCode({
+      email: body.email,
+      code: body.code,
+      type: body.type,
+    })
+    return {
+      message: 'Mã OTP hợp lệ',
     }
   }
   async validateVerificationCode({

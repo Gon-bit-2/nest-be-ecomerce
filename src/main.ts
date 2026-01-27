@@ -32,7 +32,6 @@ async function bootstrap() {
       persistAuthorization: true,
     },
   })
-
   await app.listen(process.env.PORT ?? 9999)
 }
 void bootstrap()

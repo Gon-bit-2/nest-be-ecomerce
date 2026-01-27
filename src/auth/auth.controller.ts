@@ -11,6 +11,7 @@ import {
   RegisterResDTO,
   SendOPTBodyDTO,
   TwoFactorSetupResDTO,
+  VerifyOTPBodyDTO,
 } from 'src/auth/dto/auth.dto'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { UserAgent } from 'src/shared/decorators/user-agent.decorator'
@@ -32,6 +33,12 @@ export class AuthController {
   @isPublic()
   async sendOTP(@Body() body: SendOPTBodyDTO) {
     return await this.authService.sendOTP(body)
+  }
+  @Post('verify-otp')
+  @isPublic()
+  @ZodSerializerDto(MessageResDTO)
+  async verifyOTP(@Body() body: VerifyOTPBodyDTO) {
+    return await this.authService.verifyOTP(body)
   }
   @Post('register')
   @isPublic()

@@ -52,6 +52,14 @@ export const SendOTPBodySchema = VerificationCode.pick({
 }).strict()
 
 export type SendOTPBodyType = z.infer<typeof SendOTPBodySchema>
+
+export const VerifyOTPBodySchema = VerificationCode.pick({
+  email: true,
+  code: true,
+  type: true,
+}).strict()
+export type VerifyOTPBodyType = z.infer<typeof VerifyOTPBodySchema>
+
 //tắt 2fa
 export const DisableTwoFactorBodySchema = z
   .object({
