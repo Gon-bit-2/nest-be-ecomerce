@@ -12,12 +12,14 @@ import {
   RegisterResSchema,
   SendOTPBodySchema,
   TwoFactorSetupResSchema,
+  VerifyOTPBodySchema,
 } from 'src/auth/auth.model'
 //Serializer
 
 export class RegisterBodyDTO extends createZodDto(RegisterBodySchema) {}
 export class RegisterResDTO extends createZodDto(RegisterResSchema) {}
 export class SendOPTBodyDTO extends createZodDto(SendOTPBodySchema) {}
+export class VerifyOTPBodyDTO extends createZodDto(VerifyOTPBodySchema) {}
 export class LoginBodyDTO extends createZodDto(LoginBodySchema) {}
 export class LoginResDTO extends createZodDto(LoginResSchema) {}
 export class RefreshTokenBodyDTO extends createZodDto(RefreshTokenBodySchema) {}

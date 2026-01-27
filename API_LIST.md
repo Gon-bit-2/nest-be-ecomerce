@@ -17,6 +17,20 @@ _No Auth Headers_
 }
 ```
 
+### Verify OTP
+
+**POST** `/auth/verify-otp`
+
+_No Auth Headers_
+
+```json
+{
+  "email": "user@example.com",
+  "code": "123456",
+  "type": "REGISTER" // REGISTER, FORGOT_PASSWORD, LOGIN, DISABLE_2FA,
+}
+```
+
 ### Register
 
 **POST** `/auth/register`
@@ -126,10 +140,68 @@ _No Auth Headers_
 
 ```json
 {
-  "totpCode": "123456", // Optional
-  "code": "123456" // Optional
+  "totpCode": "123456", // Provide EITHER totpCode (from App) OR code (OTP from email)
+  "code": "123456"
 }
 ```
+
+---
+
+## Product Translation Module
+
+### Get Product Translation Detail
+
+**GET** `/product-translation?productTranslationId=1`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+_No Body_
+
+### Create Product Translation
+
+**POST** `/product-translation`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+{
+  "productId": 1,
+  "languageId": "vi",
+  "name": "Áo Thun Premium",
+  "description": "Mô tả sản phẩm"
+}
+```
+
+### Update Product Translation
+
+**PATCH** `/product-translation/:productTranslationId`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+{
+  "productId": 1,
+  "languageId": "vi",
+  "name": "Áo Thun Premium V2",
+  "description": "Mô tả sản phẩm cập nhật"
+}
+```
+
+### Delete Product Translation
+
+**DELETE** `/product-translation/:productTranslationId`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+_No Body_
 
 ---
 
@@ -798,6 +870,7 @@ _No Body_
       "options": ["Red", "Blue"]
     },
     {
+    {
       "value": "Size",
       "options": ["S", "M", "L"]
     }
@@ -810,18 +883,6 @@ _No Body_
       "image": "https://example.com/red-s.jpg"
     }
     // ... more SKUs
-  ],
-  "productTranslations": [
-    {
-      "languageId": "vi",
-      "name": "Áo Thun Premium",
-      "description": "Mô tả sản phẩm"
-    },
-    {
-      "languageId": "en",
-      "name": "Premium T-Shirt",
-      "description": "Product Description"
-    }
   ]
 }
 ```
