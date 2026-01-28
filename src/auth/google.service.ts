@@ -86,7 +86,7 @@ export class GoogleService {
           password: hashPassword,
           roleId: clientRoleId,
           avatar: data.picture ?? '',
-          phoneNumber: '',
+          phoneNumber: null,
         })
       }
       const device = await this.authRepository.createDevice({
