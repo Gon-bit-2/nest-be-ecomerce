@@ -78,10 +78,17 @@ export class AuthRepository {
     })
   }
   async findUniqueVerificationCode(uniqueObject: { email: string; code: string; type: TypeOfVerificationCodeType }) {
-    return await this.prismaService.verificationCode.findUnique({
+    const verificationCode = await this.prismaService.verificationCode.findUnique({
       where: {
-        email_type: uniqueObject,
+        email_type: {
+          email: uniqueObject.email,
+          type: uniqueObject.type,
+        },
       },
     })
+    if (verificationCode && verificationCode.code === uniqueObject.code) {
+      return verificationCode
+    }
+    return null
   }
 }
