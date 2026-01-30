@@ -28,7 +28,10 @@ export class UserService {
     if (!user) {
       throw NotFoundRecordException
     }
-    return user
+    return {
+      ...user,
+      isTwoFactorEnabled: !!user.totpSecret,
+    }
   }
   async create({
     data,
@@ -55,7 +58,10 @@ export class UserService {
         },
         createdById,
       })
-      return user
+      return {
+        ...user,
+        isTwoFactorEnabled: !!user.totpSecret,
+      }
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError && error.code === 'P2003') {
         throw RoleNotFoundException
@@ -101,7 +107,10 @@ export class UserService {
           updatedById,
         },
       )
-      return updateUser
+      return {
+        ...updateUser,
+        isTwoFactorEnabled: !!updateUser.totpSecret,
+      }
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError && error.code === 'P2003') {
         throw RoleNotFoundException

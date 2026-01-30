@@ -122,14 +122,71 @@ Cấu trúc lỗi trả về:
 
 ## 6. Upload File (Media)
 
-Khi gọi API upload (`POST /media/images/upload`):
+### a. Upload Ảnh (Images)
 
-1.  Header **BẮT BUỘC**: `Content-Type: multipart/form-data`.
-2.  Body gửi dạng `FormData`.
-    ```javascript
-    const formData = new FormData()
-    formData.append('file', fileObject)
-    ```
+Khi upload ảnh để sử dụng trong Product, Brand, SKU,...:
+
+1. **Upload ảnh lên server** bằng API `POST /media/images/upload`:
+   - Header **BẮT BUỘC**: `Content-Type: multipart/form-data`
+   - Body gửi dạng `FormData`:
+     ```javascript
+     const formData = new FormData()
+     formData.append('file', fileObject1)
+     formData.append('file', fileObject2) // Có thể upload nhiều file cùng lúc
+     ```
+
+2. **Response từ API upload** sẽ có dạng:
+
+   ```json
+   {
+     "data": [
+       {
+         "url": "https://ecom-be-nestjs.s3.us-east-1.amazonaws.com/images/abc123.png",
+         "name": "product-image.png",
+         "key": "images/abc123.png",
+         "type": "image/png"
+       },
+       {
+         "url": "https://ecom-be-nestjs.s3.us-east-1.amazonaws.com/images/def456.png",
+         "name": "product-image2.png",
+         "key": "images/def456.png",
+         "type": "image/png"
+       }
+     ]
+   }
+   ```
+
+3. **Lấy URL từ response để sử dụng:**
+   - **❌ SAI**: Không stringify toàn bộ object hoặc stringify từng item
+   - **✅ ĐÚNG**: Chỉ lấy field `url` từ mỗi item trong array `data`
+
+   ```javascript
+   // ❌ SAI - Đừng làm như thế này
+   const wrongImages = response.data.map((item) => JSON.stringify(item))
+   // Result: ["{data: [{url: https://...}]}", ...]
+
+   // ✅ ĐÚNG - Làm như thế này
+   const correctImages = response.data.map((item) => item.url)
+   // Result: ["https://...", "https://..."]
+   ```
+
+4. **Sử dụng URLs khi tạo/cập nhật Product**:
+   ```json
+   {
+     "name": "Áo thun",
+     "images": [
+       "https://ecom-be-nestjs.s3.us-east-1.amazonaws.com/images/abc123.png",
+       "https://ecom-be-nestjs.s3.us-east-1.amazonaws.com/images/def456.png"
+     ],
+     ...
+   }
+   ```
+
+### b. Lưu Ý Quan Trọng
+
+- Field `images` trong Product/SKU **PHẢI** là **array of string URLs**, KHÔNG phải object hay stringified object
+- Backend đã có xử lý tự động để convert format cũ (nếu có) sang format mới, nhưng Frontend nên gửi đúng format ngay từ đầu
+- Tương tự áp dụng cho field `image` trong SKU (chỉ gửi URL string, không phải object)
 
 ## 7. Các Lưu Ý Khác
 

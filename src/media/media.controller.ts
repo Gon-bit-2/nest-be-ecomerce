@@ -3,7 +3,6 @@ import {
   Post,
   UseInterceptors,
   MaxFileSizeValidator,
-  FileTypeValidator,
   UploadedFiles,
   Get,
   Param,
@@ -20,7 +19,8 @@ import path from 'path'
 import { S3Service } from 'src/shared/service/s3.service'
 import { ParseFilePipeWithUnlink } from 'src/media/parse-file-pipe-with-unlink.pipe'
 import { ZodSerializerDto } from 'nestjs-zod'
-import { PresignedUploadFileBodyDTO, PresignedUploadFileResDTO } from 'src/media/dto/media.dto'
+import { PresignedUploadFileBodyDTO, PresignedUploadFileResDTO, UploadedFilesDTO } from 'src/media/dto/media.dto'
+import { ImageMimeTypeValidator } from './image-mime-type.validator'
 
 @Controller('media')
 export class MediaController {
@@ -30,7 +30,7 @@ export class MediaController {
   ) {}
 
   @Post('images/upload')
-  @ZodSerializerDto(PresignedUploadFileResDTO)
+  @ZodSerializerDto(UploadedFilesDTO)
   @UseInterceptors(FilesInterceptor('file', 100))
   async uploadFile(
     @UploadedFiles(
@@ -39,15 +39,13 @@ export class MediaController {
           new MaxFileSizeValidator({
             maxSize: 1024 * 1024 * 5,
           }),
-          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
+          new ImageMimeTypeValidator(),
         ],
       }),
     )
     files: Array<Express.Multer.File>,
   ) {
-    console.log(files)
-    const result = await this.mediaService.uploadFile(files)
-    return result
+    return this.mediaService.uploadFile(files)
   }
   @Get('static/:filename')
   @isPublic()

@@ -8,6 +8,7 @@ export const GetUserResSchema = z.object({
       password: true,
       totpSecret: true,
     }).extend({
+      isTwoFactorEnabled: z.boolean(),
       role: RoleSchema.pick({
         id: true,
         name: true,
