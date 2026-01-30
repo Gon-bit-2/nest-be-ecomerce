@@ -16,7 +16,10 @@ export class ProfileService {
     if (!user) {
       throw NotFoundRecordException
     }
-    return user
+    return {
+      ...user,
+      isTwoFactorEnabled: !!user.totpSecret,
+    }
   }
   async updateProfile({ userId, body }: { userId: number; body: UpdateMeBodyType }) {
     const user = await this.shareUserRepository.findUnique({ id: userId })
@@ -24,7 +27,10 @@ export class ProfileService {
       throw NotFoundRecordException
     }
     const updateUser = await this.shareUserRepository.update({ id: userId }, body)
-    return updateUser
+    return {
+      ...updateUser,
+      isTwoFactorEnabled: !!updateUser.totpSecret,
+    }
   }
   async changePassword({ userId, body }: { userId: number; body: Omit<ChangePasswordBodyType, 'confirmPassword'> }) {
     try {

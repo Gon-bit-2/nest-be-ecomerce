@@ -47,10 +47,6 @@ export class S3Service {
       leavePartsOnError: false,
     })
 
-    parallelUploads3.on('httpUploadProgress', (progress) => {
-      console.log(progress)
-    })
-
     return parallelUploads3.done()
   }
   createPresignedUrlWithClient(fileName: string) {

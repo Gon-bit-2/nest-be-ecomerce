@@ -8,7 +8,7 @@ export const UserSchema = z.object({
   email: z.string().email().nonempty(),
   password: z.string().min(6).max(100).nonempty(),
   name: z.string().min(1).max(100).nonempty(),
-  phoneNumber: z.string().min(10).max(15).nonempty(),
+  phoneNumber: z.string().min(10).max(15).or(z.null()),
   avatar: z.string().nullable(),
   totpSecret: z.string().nullable(),
   status: z.enum([UserStatus.ACTIVE, UserStatus.INACTIVE, UserStatus.BLOCKED]),
@@ -26,6 +26,7 @@ export const GetUsserProfileResSchema = UserSchema.omit({
   password: true,
   totpSecret: true,
 }).extend({
+  isTwoFactorEnabled: z.boolean(),
   role: RoleSchema.pick({
     id: true,
     name: true,
@@ -47,5 +48,7 @@ export const GetUsserProfileResSchema = UserSchema.omit({
 export const UpdateProfileResSchema = UserSchema.omit({
   password: true,
   totpSecret: true,
+}).extend({
+  isTwoFactorEnabled: z.boolean(),
 })
 export type UserType = z.infer<typeof UserSchema>

@@ -130,6 +130,17 @@ _No Auth Headers_
 {}
 ```
 
+**Response:**
+
+```json
+{
+  "secret": "JBSWY3DPEHPK3PXP",
+  "url": "otpauth://totp/E-commerce:user@example.com?secret=JBSWY3DPEHPK3PXP&issuer=E-commerce"
+}
+```
+
+**Note:** The `secret` is only returned once during setup. Store it securely. Use the `url` to generate QR code for authenticator apps.
+
 ### Disable 2FA
 
 **POST** `/auth/2fa/disable`
@@ -290,6 +301,11 @@ _No Body_
 - `Authorization`: `Bearer <accessToken>`
 
 _No Body_
+
+**Response includes:**
+
+- `isTwoFactorEnabled`: boolean - Indicates if user has 2FA enabled
+- User information (email, name, phoneNumber, avatar, status, role with permissions)
 
 ### Update Profile
 
@@ -870,22 +886,41 @@ _No Body_
       "options": ["Red", "Blue"]
     },
     {
-    {
       "value": "Size",
       "options": ["S", "M", "L"]
     }
   ],
   "skus": [
     {
-      "value": "Red - S",
+      "value": "Red-S",
       "price": 200000,
       "stock": 100,
       "image": "https://example.com/red-s.jpg"
+    },
+    {
+      "value": "Red-M",
+      "price": 200000,
+      "stock": 100,
+      "image": "https://example.com/red-m.jpg"
     }
-    // ... more SKUs
+    // ... more SKUs (total should match variants combinations: 2 colors x 3 sizes = 6 SKUs)
   ]
 }
 ```
+
+**Important Notes:**
+
+- `images`: Must be an **array of URL strings**. To get image URLs:
+  1. First upload images via **POST** `/media/images/upload` with form-data
+  2. The response will be: `{ "data": [{ "url": "https://...", "name": "...", "key": "...", "type": "..." }] }`
+  3. Extract only the `url` field from each item in `data` array
+  4. Send these URLs in the `images` field: `["https://url1.jpg", "https://url2.jpg"]`
+
+  ❌ **Wrong**: `["{data: [{url: https://...}]}"]` (stringified object)  
+  ✅ **Correct**: `["https://url1.jpg", "https://url2.jpg"]` (array of strings)
+
+- `skus`: Number of SKUs must match the total combinations of variants
+  - Example: 2 colors × 3 sizes = 6 SKUs required
 
 ### Update Product
 

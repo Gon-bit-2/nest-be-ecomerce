@@ -187,10 +187,12 @@ export class DiscountRepo {
     createdById: number
   }): Promise<CreateDiscountBodyResType> {
     try {
-      const { productIds, categoryIds, ...data } = body
+      const { productIds, categoryIds, startDate, endDate, ...data } = body
       const discount = await this.prismaService.discount.create({
         data: {
           ...data,
+          startDate: new Date(startDate),
+          endDate: new Date(endDate),
           products: {
             create: productIds?.map((id) => ({
               product: { connect: { id } },
@@ -295,6 +297,8 @@ export class DiscountRepo {
         where: { id: discountId, shopId: createdById },
         data: {
           ...data,
+          ...(data.startDate && { startDate: new Date(data.startDate) }),
+          ...(data.endDate && { endDate: new Date(data.endDate) }),
           updatedById,
         },
         include: {

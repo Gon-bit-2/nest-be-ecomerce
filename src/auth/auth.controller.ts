@@ -22,6 +22,7 @@ import { type Response } from 'express'
 import envConfig from 'src/shared/config'
 import { EmptyBodyDTO } from 'src/shared/dtos/request.dto'
 import { ActiveUser } from 'src/shared/decorators/active-user.decorator'
+import { Throttle } from '@nestjs/throttler'
 
 @Controller('auth')
 export class AuthController {
@@ -29,6 +30,9 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly googleService: GoogleService,
   ) {}
+  @Throttle({
+    default: { limit: 1, ttl: 60000 },
+  })
   @Post('otp')
   @isPublic()
   async sendOTP(@Body() body: SendOPTBodyDTO) {

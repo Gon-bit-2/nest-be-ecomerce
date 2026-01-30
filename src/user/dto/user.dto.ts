@@ -7,6 +7,7 @@ import {
   UpdateUserBodySchema,
 } from '../user.model'
 import { UserSchema } from 'src/shared/model/shared-user.model'
+import { z } from 'zod'
 
 export class GetUsersResDTO extends createZodDto(GetUserResSchema) {}
 export class GetUsersQueryDTO extends createZodDto(GetUsersQuerySchema) {}
@@ -18,6 +19,8 @@ export class CreateUserResDTO extends createZodDto(
   UserSchema.omit({
     password: true,
     totpSecret: true,
+  }).extend({
+    isTwoFactorEnabled: z.boolean(),
   }),
 ) {}
 

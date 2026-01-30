@@ -241,6 +241,7 @@ export class AuthService {
       if (error instanceof Error) {
         throw new BadRequestException('Đăng Nhập Thất Bại!', error)
       }
+      throw error
     }
   }
 
@@ -376,8 +377,8 @@ export class AuthService {
     const { secret, uri } = this.twoFactorAuthService.generateSecret(user.email)
     //3: cập nhập secret và user trong db
     await this.shareUserRepository.update({ id: user.id }, { totpSecret: secret, updatedById: userId })
-    //4: trả về secret và uri
-    return { secret, uri }
+    //4: trả về secret và url
+    return { secret, url: uri }
   }
   async disableTwoFactorAuth(data: DisableTwoFactorBodyType & { userId: number }) {
     const { userId, code, totpCode } = data

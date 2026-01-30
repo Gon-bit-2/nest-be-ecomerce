@@ -46,10 +46,15 @@ export const CreateDiscountSchema = DiscountSchema.pick({
   isActive: true,
   startDate: true,
   endDate: true,
-}).refine((data) => data.endDate >= data.startDate, {
-  message: 'End date must be greater than start date',
-  path: ['endDate'],
 })
+  .extend({
+    startDate: z.string().datetime(),
+    endDate: z.string().datetime(),
+  })
+  .refine((data) => new Date(data.endDate) >= new Date(data.startDate), {
+    message: 'End date must be greater than start date',
+    path: ['endDate'],
+  })
 
 export const CreateDiscountResSchema = DiscountSchema
 export const UpdateDiscountSchema = CreateDiscountSchema.partial().omit({
