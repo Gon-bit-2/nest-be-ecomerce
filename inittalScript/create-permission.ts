@@ -19,6 +19,7 @@ const SellerModule = [
   'ORDER',
   'PAYMENT',
   'DISCOUNT',
+  'ROLE',
 ]
 const ClientModule = ['AUTH', 'PROFILE', 'MEDIA', 'CART', 'ORDER', 'PAYMENT', 'REVIEW', 'DISCOUNT']
 

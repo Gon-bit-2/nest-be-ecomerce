@@ -26,8 +26,15 @@ export class UserRepo {
         },
       }),
     ])
+
+    // Map data to include isTwoFactorEnabled
+    const mappedData = data.map((user) => ({
+      ...user,
+      isTwoFactorEnabled: !!user.totpSecret,
+    }))
+
     return {
-      data,
+      data: mappedData,
       totalItem: totalItems,
       page: pagination.page,
       limit: pagination.limit,

@@ -26,6 +26,7 @@ export const GetUsserProfileResSchema = UserSchema.omit({
   password: true,
   totpSecret: true,
 }).extend({
+  isTwoFactorEnabled: z.boolean(),
   role: RoleSchema.pick({
     id: true,
     name: true,
@@ -47,5 +48,7 @@ export const GetUsserProfileResSchema = UserSchema.omit({
 export const UpdateProfileResSchema = UserSchema.omit({
   password: true,
   totpSecret: true,
+}).extend({
+  isTwoFactorEnabled: z.boolean(),
 })
 export type UserType = z.infer<typeof UserSchema>

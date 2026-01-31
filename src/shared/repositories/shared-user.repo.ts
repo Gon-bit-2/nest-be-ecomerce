@@ -41,10 +41,22 @@ export class ShareUserRepository {
     })
   }
   async update(where: { id: number }, data: Partial<UserType>) {
-    return await this.prismaService.user.update({
+    // Verify user exists and not deleted before updating
+    const existingUser = await this.prismaService.user.findFirst({
       where: {
         id: where.id,
         deletedAt: null,
+      },
+      select: { id: true },
+    })
+
+    if (!existingUser) {
+      throw new Error('User not found or has been deleted')
+    }
+
+    return await this.prismaService.user.update({
+      where: {
+        id: where.id,
       },
       data,
     })

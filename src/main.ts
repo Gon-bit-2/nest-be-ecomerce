@@ -5,9 +5,15 @@ import { WebsocketAdapter } from 'websockets/websocket.adapter'
 // import { UPLOAD_DIR } from 'src/shared/constants/other.constant'
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
 import { cleanupOpenApiDoc } from 'nestjs-zod'
+import helmet from 'helmet'
+import { Logger } from 'nestjs-pino'
+// import { LoggingInterceptor } from './shared/interceptor/logging.interceptor'
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule)
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true })
+  app.use(helmet())
   app.enableCors()
+  app.useLogger(app.get(Logger))
+  // app.useGlobalInterceptors(new LoggingInterceptor())
   const websocketAdapter = new WebsocketAdapter(app)
   await websocketAdapter.connectToRedis()
   app.useWebSocketAdapter(websocketAdapter)
