@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Module } from '@nestjs/common'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
@@ -34,6 +35,8 @@ import { ScheduleModule } from '@nestjs/schedule'
 import { CacheModule } from '@nestjs/cache-manager'
 import { createKeyv } from '@keyv/redis'
 import { DiscountModule } from './discount/discount.module'
+import { LoggerModule } from 'nestjs-pino'
+import pino from 'pino'
 @Module({
   imports: [
     SharedModule,
@@ -46,6 +49,14 @@ import { DiscountModule } from './discount/discount.module'
     MediaModule,
     BrandModule,
     BrandTranslationModule,
+    CategoryModule,
+    ProductModule,
+    OrderModule,
+    CartModule,
+    PaymentModule,
+    WebsocketModule,
+    ReviewModule,
+    DiscountModule,
     I18nModule.forRoot({
       fallbackLanguage: 'en',
       loaderOptions: {
@@ -55,11 +66,6 @@ import { DiscountModule } from './discount/discount.module'
       resolvers: [{ use: QueryResolver, options: ['lang'] }, AcceptLanguageResolver],
       typesOutputPath: path.resolve('src/generated/i18n.generated.ts'),
     }),
-    CategoryModule,
-    ProductModule,
-    OrderModule,
-    CartModule,
-    PaymentModule,
     BullModule.forRoot({
       connection: {
         /*local
@@ -82,8 +88,6 @@ import { DiscountModule } from './discount/discount.module'
         },
       ],
     }),
-    WebsocketModule,
-    ReviewModule,
     ScheduleModule.forRoot(),
     CacheModule.registerAsync({
       isGlobal: true,
@@ -97,7 +101,30 @@ import { DiscountModule } from './discount/discount.module'
         }
       },
     }),
-    DiscountModule,
+    LoggerModule.forRoot({
+      pinoHttp: {
+        serializers: {
+          req: (req: any) => {
+            return {
+              method: req.method,
+              url: req.url,
+              query: req.query,
+              params: req.params,
+            }
+          },
+          res: (res: any) => {
+            return {
+              statusCode: res.statusCode,
+            }
+          },
+        },
+        stream: pino.destination({
+          dest: path.resolve('logs/app.log'),
+          sync: false,
+          mkdir: true,
+        }),
+      },
+    }),
   ],
   controllers: [AppController],
   providers: [
