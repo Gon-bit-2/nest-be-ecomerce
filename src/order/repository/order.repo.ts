@@ -66,63 +66,78 @@ export class OrderRepo {
     paymentId: number
     orders: CreateOrderBodyResType['orders']
   }> {
-    //1. kiểm tra xem all cartItems có tồn tại in db
-    const allBodyCartItemIds = body.map((item) => item.cartItemIds).flat()
-    const cartItems = await this.prismaService.cartItem.findMany({
-      where: {
-        id: {
-          in: allBodyCartItemIds,
+    const [paymentId, orders] = await this.prismaService.$transaction(async (tx) => {
+      //1. kiểm tra xem all cartItems có tồn tại in db
+      const allBodyCartItemIds = body.map((item) => item.cartItemIds).flat()
+      const cartItemsForSKUIds = await tx.cartItem.findMany({
+        where: {
+          id: {
+            in: allBodyCartItemIds,
+          },
+          userId,
         },
-        userId,
-      },
-      include: {
-        sku: {
-          include: {
-            product: {
-              include: {
-                productTranslations: true,
+        select: {
+          skuId: true,
+        },
+      })
+      //tiến hành khóa pessimistic lock
+      const skuIds = cartItemsForSKUIds.map((item) => item.skuId)
+      await tx.$queryRaw`SELECT * FROM skus WHERE id IN (${Prisma.join(skuIds)}) FOR UPDATE`
+      const cartItems = await tx.cartItem.findMany({
+        where: {
+          id: {
+            in: allBodyCartItemIds,
+          },
+          userId,
+        },
+        include: {
+          sku: {
+            include: {
+              product: {
+                include: {
+                  productTranslations: true,
+                },
               },
             },
           },
         },
-      },
-    })
-    if (cartItems.length !== allBodyCartItemIds.length) {
-      throw NotFoundCartItemException
-    }
-    //2. kiểm tra số lượng mua có lớn hơn ? sl tồn
-    const isOutOfStock = cartItems.some((item) => {
-      return item.sku.stock < item.quantity
-    })
-    if (isOutOfStock) {
-      throw OutOfStockSKUException
-    }
-    //3. kiểm tra sản phẩm mua có sp đã bị xóa hay ẩn
-    const isExitsNotReadyProduct = cartItems.some((item) => {
-      return (
-        item.sku.product.deletedAt !== null ||
-        item.sku.product.publishedAt === null ||
-        item.sku.product.publishedAt > new Date()
-      )
-    })
-    if (isExitsNotReadyProduct) {
-      throw NotFoundCartItemException
-    }
-    //4. kiểm tra các skuId trong cartItems gửi lên có thuộc về shopId gửi lên không
-    const cartItemMap = new Map<number, (typeof cartItems)[0]>()
-    cartItems.forEach((item) => cartItemMap.set(item.id, item))
-    const isValidShop = body.every((item) => {
-      const bodyCartItemIds = item.cartItemIds
-      return bodyCartItemIds.every((cartItemId) => {
-        const cartItem = cartItemMap.get(cartItemId)!
-        return item.shopId === cartItem.sku.createdById
       })
-    })
-    if (!isValidShop) {
-      throw SKUNotBeLongToShopException
-    }
-    //5. Tạo order
-    const [paymentId, orders] = await this.prismaService.$transaction(async (tx) => {
+      // Kiểm tra xem cartItems có tồn tại trong db không
+      if (cartItems.length !== allBodyCartItemIds.length) {
+        throw NotFoundCartItemException
+      }
+      //2. kiểm tra số lượng mua có lớn hơn ? sl tồn
+      const isOutOfStock = cartItems.some((item) => {
+        return item.sku.stock < item.quantity
+      })
+      if (isOutOfStock) {
+        throw OutOfStockSKUException
+      }
+      //3. kiểm tra sản phẩm mua có sp đã bị xóa hay ẩn
+      const isExitsNotReadyProduct = cartItems.some((item) => {
+        return (
+          item.sku.product.deletedAt !== null ||
+          item.sku.product.publishedAt === null ||
+          item.sku.product.publishedAt > new Date()
+        )
+      })
+      if (isExitsNotReadyProduct) {
+        throw NotFoundCartItemException
+      }
+      //4. kiểm tra các skuId trong cartItems gửi lên có thuộc về shopId gửi lên không
+      const cartItemMap = new Map<number, (typeof cartItems)[0]>()
+      cartItems.forEach((item) => cartItemMap.set(item.id, item))
+      const isValidShop = body.every((item) => {
+        const bodyCartItemIds = item.cartItemIds
+        return bodyCartItemIds.every((cartItemId) => {
+          const cartItem = cartItemMap.get(cartItemId)!
+          return item.shopId === cartItem.sku.createdById
+        })
+      })
+      if (!isValidShop) {
+        throw SKUNotBeLongToShopException
+      }
+      //5. Tạo order
       const payment = await tx.payment.create({
         data: {
           status: PAYMENT_STATUS.PENDING,
