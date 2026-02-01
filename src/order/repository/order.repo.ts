@@ -20,6 +20,7 @@ import {
 import { ORDER_STATUS } from 'src/shared/constants/order.constant'
 import { PAYMENT_STATUS } from 'src/shared/constants/payment.constant'
 import { OrderProducer } from '../queue/order.producer'
+import { VerionConflictException } from 'src/shared/error/error'
 
 @Injectable()
 export class OrderRepo {
@@ -66,86 +67,91 @@ export class OrderRepo {
     paymentId: number
     orders: CreateOrderBodyResType['orders']
   }> {
-    const [paymentId, orders] = await this.prismaService.$transaction(async (tx) => {
-      //1. kiểm tra xem all cartItems có tồn tại in db
-      const allBodyCartItemIds = body.map((item) => item.cartItemIds).flat()
-      const cartItemsForSKUIds = await tx.cartItem.findMany({
-        where: {
-          id: {
-            in: allBodyCartItemIds,
+    const [paymentId, orders] = await this.prismaService.$transaction<[number, CreateOrderBodyResType['orders']]>(
+      async (tx) => {
+        //1. kiểm tra xem all cartItems có tồn tại in db
+        const allBodyCartItemIds = body.map((item) => item.cartItemIds).flat()
+        //Pessimistic lock
+        // const cartItemsForSKUIds = await tx.cartItem.findMany({
+        //   where: {
+        //     id: {
+        //       in: allBodyCartItemIds,
+        //     },
+        //     userId,
+        //   },
+        //   select: {
+        //     skuId: true,
+        //   },
+        // })
+        // //tiến hành khóa pessimistic lock
+        // const skuIds = cartItemsForSKUIds.map((item) => item.skuId)
+        // await tx.$queryRaw`SELECT * FROM skus WHERE id IN (${Prisma.join(skuIds)}) FOR UPDATE`
+        //----------------
+        const cartItems = await tx.cartItem.findMany({
+          where: {
+            id: {
+              in: allBodyCartItemIds,
+            },
+            userId,
           },
-          userId,
-        },
-        select: {
-          skuId: true,
-        },
-      })
-      //tiến hành khóa pessimistic lock
-      const skuIds = cartItemsForSKUIds.map((item) => item.skuId)
-      await tx.$queryRaw`SELECT * FROM skus WHERE id IN (${Prisma.join(skuIds)}) FOR UPDATE`
-      const cartItems = await tx.cartItem.findMany({
-        where: {
-          id: {
-            in: allBodyCartItemIds,
-          },
-          userId,
-        },
-        include: {
-          sku: {
-            include: {
-              product: {
-                include: {
-                  productTranslations: true,
+          include: {
+            sku: {
+              include: {
+                product: {
+                  include: {
+                    productTranslations: true,
+                  },
                 },
               },
             },
           },
-        },
-      })
-      // Kiểm tra xem cartItems có tồn tại trong db không
-      if (cartItems.length !== allBodyCartItemIds.length) {
-        throw NotFoundCartItemException
-      }
-      //2. kiểm tra số lượng mua có lớn hơn ? sl tồn
-      const isOutOfStock = cartItems.some((item) => {
-        return item.sku.stock < item.quantity
-      })
-      if (isOutOfStock) {
-        throw OutOfStockSKUException
-      }
-      //3. kiểm tra sản phẩm mua có sp đã bị xóa hay ẩn
-      const isExitsNotReadyProduct = cartItems.some((item) => {
-        return (
-          item.sku.product.deletedAt !== null ||
-          item.sku.product.publishedAt === null ||
-          item.sku.product.publishedAt > new Date()
-        )
-      })
-      if (isExitsNotReadyProduct) {
-        throw NotFoundCartItemException
-      }
-      //4. kiểm tra các skuId trong cartItems gửi lên có thuộc về shopId gửi lên không
-      const cartItemMap = new Map<number, (typeof cartItems)[0]>()
-      cartItems.forEach((item) => cartItemMap.set(item.id, item))
-      const isValidShop = body.every((item) => {
-        const bodyCartItemIds = item.cartItemIds
-        return bodyCartItemIds.every((cartItemId) => {
-          const cartItem = cartItemMap.get(cartItemId)!
-          return item.shopId === cartItem.sku.createdById
         })
-      })
-      if (!isValidShop) {
-        throw SKUNotBeLongToShopException
-      }
-      //5. Tạo order
-      const payment = await tx.payment.create({
-        data: {
-          status: PAYMENT_STATUS.PENDING,
-        },
-      })
-      const orders$ = Promise.all(
-        body.map((item) =>
-          tx.order.create({
+        // Kiểm tra xem cartItems có tồn tại trong db không
+        if (cartItems.length !== allBodyCartItemIds.length) {
+          throw NotFoundCartItemException
+        }
+        //2. kiểm tra số lượng mua có lớn hơn ? sl tồn
+        const isOutOfStock = cartItems.some((item) => {
+          return item.sku.stock < item.quantity
+        })
+        if (isOutOfStock) {
+          throw OutOfStockSKUException
+        }
+        //3. kiểm tra sản phẩm mua có sp đã bị xóa hay ẩn
+        const isExitsNotReadyProduct = cartItems.some((item) => {
+          return (
+            item.sku.product.deletedAt !== null ||
+            item.sku.product.publishedAt === null ||
+            item.sku.product.publishedAt > new Date()
+          )
+        })
+        if (isExitsNotReadyProduct) {
+          throw NotFoundCartItemException
+        }
+        //4. kiểm tra các skuId trong cartItems gửi lên có thuộc về shopId gửi lên không
+        const cartItemMap = new Map<number, (typeof cartItems)[0]>()
+        cartItems.forEach((item) => cartItemMap.set(item.id, item))
+        const isValidShop = body.every((item) => {
+          const bodyCartItemIds = item.cartItemIds
+          return bodyCartItemIds.every((cartItemId) => {
+            const cartItem = cartItemMap.get(cartItemId)!
+            return item.shopId === cartItem.sku.createdById
+          })
+        })
+        if (!isValidShop) {
+          throw SKUNotBeLongToShopException
+        }
+        //5. Tạo order
+        const payment = await tx.payment.create({
+          data: {
+            status: PAYMENT_STATUS.PENDING,
+          },
+        })
+
+        const orders: CreateOrderBodyResType['orders'] = []
+
+        for (const item of body) {
+          const order = await tx.order.create({
             data: {
               userId,
               status: ORDER_STATUS.PENDING_PAYMENT,
@@ -184,34 +190,46 @@ export class OrderRepo {
                 }),
               },
             },
-          }),
-        ),
-      )
-      const cartItem$ = tx.cartItem.deleteMany({
-        where: {
-          id: {
-            in: allBodyCartItemIds,
-          },
-        },
-      })
-      const sku$ = Promise.all(
-        cartItems.map((item) => {
-          return tx.sKU.update({
-            where: {
-              id: item.sku.id,
-            },
-            data: {
-              stock: {
-                decrement: item.quantity,
-              },
-            },
           })
-        }),
-      )
-      const addCancelPaymentJob$ = this.orderProducer.addCancelPaymentJob(payment.id)
-      const [orders] = await Promise.all([orders$, cartItem$, sku$, addCancelPaymentJob$])
-      return [payment.id, orders]
-    })
+          orders.push(order)
+        }
+
+        await tx.cartItem.deleteMany({
+          where: {
+            id: {
+              in: allBodyCartItemIds,
+            },
+          },
+        })
+
+        for (const item of cartItems) {
+          await tx.sKU
+            .update({
+              where: {
+                id: item.sku.id,
+                updatedAt: item.sku.updatedAt,
+                stock: {
+                  gte: item.quantity,
+                },
+              },
+              data: {
+                stock: {
+                  decrement: item.quantity,
+                },
+              },
+            })
+            .catch((e) => {
+              if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2025') {
+                throw VerionConflictException
+              }
+              throw e
+            })
+        }
+
+        await this.orderProducer.addCancelPaymentJob(payment.id)
+        return [payment.id, orders]
+      },
+    )
     return {
       paymentId,
       orders,
