@@ -1,4 +1,4 @@
-import { NotFoundException, UnprocessableEntityException } from '@nestjs/common'
+import { ConflictException, NotFoundException, UnprocessableEntityException } from '@nestjs/common'
 
 export const NotFoundRecordException = new NotFoundException('Error.NotFound')
 export const InvalidPasswordException = new UnprocessableEntityException([
@@ -7,3 +7,5 @@ export const InvalidPasswordException = new UnprocessableEntityException([
     path: 'password',
   },
 ])
+
+export const VerionConflictException = new ConflictException('Error.VersionConflict')
