@@ -1,12 +1,26 @@
 import { Controller, Get, Param, Query } from '@nestjs/common'
 import { ProductService } from './product.service'
-import { GetProductDetailResDTO, GetProductParamsDTO, GetProductQueryDTO, GetProductResDTO } from './dto/product.dto'
+import {
+  GetProductDetailResDTO,
+  GetProductParamsDTO,
+  GetProductQueryDTO,
+  GetProductResDTO,
+  SearchProductQueryDTO,
+} from './dto/product.dto'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { isPublic } from 'src/shared/decorators/auth.decorator'
 
 @Controller('product')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
+
+  @Get('search')
+  @isPublic()
+  @ZodSerializerDto(GetProductResDTO)
+  async search(@Query() query: SearchProductQueryDTO) {
+    const products = await this.productService.search({ query })
+    return products
+  }
 
   @Get()
   @isPublic()

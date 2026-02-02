@@ -1,12 +1,21 @@
 import { Injectable } from '@nestjs/common'
 import { ProductRepo } from './repository/product.repo'
-import { GetProductsQueryType } from './product.model'
+import { GetProductsQueryType, SearchProductQueryType } from './product.model'
 import { I18nContext } from 'nestjs-i18n'
 import { NotFoundRecordException } from 'src/shared/error/error'
 
 @Injectable()
 export class ProductService {
   constructor(private readonly productRepo: ProductRepo) {}
+
+  async search(props: { query: SearchProductQueryType }) {
+    return this.productRepo.search({
+      languageId: I18nContext.current()?.lang as string,
+      limit: props.query.limit,
+      page: props.query.page,
+      q: props.query.q,
+    })
+  }
 
   async list(props: { query: GetProductsQueryType }) {
     return this.productRepo.list({

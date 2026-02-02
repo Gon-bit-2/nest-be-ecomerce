@@ -134,6 +134,99 @@ export class ProductRepo {
     }
   }
 
+  async search({
+    q,
+    page,
+    limit,
+    languageId,
+  }: {
+    q: string
+    page: number
+    limit: number
+    languageId: string
+  }): Promise<GetProductsResType> {
+    const offset = (page - 1) * limit
+    const searchString = `%${q}%`
+
+    // 1. Tìm danh sách ID sản phẩm khớp với từ khóa
+    // Sử dụng pg_trgm (ILIKE theo unaccent) và Full Text Search (tsvector)
+    const rawIds = await this.prismaService.$queryRaw<{ id: number }[]>`
+      SELECT DISTINCT p.id
+      FROM "Product" p
+      LEFT JOIN "ProductTranslation" pt ON p.id = pt."productId"
+      LEFT JOIN "Language" l ON pt."languageId" = l.id
+      WHERE
+        p."deletedAt" IS NULL
+        AND (
+          -- Tìm kiếm unaccent (không dấu) + substring (chứa chuỗi)
+          unaccent(p.name) ILIKE unaccent(${searchString})
+          OR unaccent(pt.name) ILIKE unaccent(${searchString})
+          -- Tìm kiếm Full Text Search (tách từ: "quần jean" -> "quần" & "jean")
+          OR to_tsvector('simple', unaccent(p.name)) @@ plainto_tsquery('simple', unaccent(${q}))
+          OR to_tsvector('simple', unaccent(pt.name)) @@ plainto_tsquery('simple', unaccent(${q}))
+        )
+      GROUP BY p.id
+      LIMIT ${limit} OFFSET ${offset}
+    `
+
+    const ids = rawIds.map((item) => item.id)
+
+    if (ids.length === 0) {
+      return {
+        data: [],
+        totalItems: 0,
+        page,
+        limit,
+        totalPages: 0,
+      }
+    }
+
+    // 2. Đếm tổng số lượng kết quả (để phân trang)
+    const countResult = await this.prismaService.$queryRaw<{ count: bigint }[]>`
+      SELECT count(DISTINCT p.id) as count
+      FROM "Product" p
+      LEFT JOIN "ProductTranslation" pt ON p.id = pt."productId"
+      WHERE
+        p."deletedAt" IS NULL
+        AND (
+          unaccent(p.name) ILIKE unaccent(${searchString})
+          OR unaccent(pt.name) ILIKE unaccent(${searchString})
+          OR to_tsvector('simple', unaccent(p.name)) @@ plainto_tsquery('simple', unaccent(${q}))
+          OR to_tsvector('simple', unaccent(pt.name)) @@ plainto_tsquery('simple', unaccent(${q}))
+        )
+    `
+    const totalItems = Number(countResult[0]?.count || 0)
+
+    // 3. Lấy dữ liệu chi tiết
+    const products = await this.prismaService.product.findMany({
+      where: {
+        id: { in: ids },
+      },
+      include: {
+        productTranslations: {
+          where: languageId === ALL_LANGUAGE_CODE ? { deletedAt: null } : { deletedAt: null, languageId },
+        },
+        order: {
+          where: {
+            deletedAt: null,
+            status: 'DELIVERED',
+          },
+        },
+      },
+    })
+
+    // 4. Sắp xếp lại kết quả theo thứ tự ID trả về từ Raw Query (để đảm bảo độ chính xác của tìm kiếm)
+    const sortedProducts = ids.map((id) => products.find((p) => p.id === id)).filter((p) => p !== undefined) as any
+
+    return {
+      data: sortedProducts,
+      totalItems,
+      page,
+      limit,
+      totalPages: Math.ceil(totalItems / limit),
+    }
+  }
+
   async findById(productId: number) {
     const product = await this.prismaService.product.findUnique({
       where: {
