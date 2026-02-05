@@ -35,6 +35,7 @@ import { ScheduleModule } from '@nestjs/schedule'
 import { CacheModule } from '@nestjs/cache-manager'
 import { createKeyv } from '@keyv/redis'
 import { DiscountModule } from './discount/discount.module'
+import { ShopVideoModule } from './shop-video/shop-video.module'
 import { LoggerModule } from 'nestjs-pino'
 import pino from 'pino'
 @Module({
@@ -57,6 +58,7 @@ import pino from 'pino'
     WebsocketModule,
     ReviewModule,
     DiscountModule,
+    ShopVideoModule,
     I18nModule.forRoot({
       fallbackLanguage: 'en',
       loaderOptions: {

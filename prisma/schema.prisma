@@ -106,18 +106,23 @@ model User {
   updatedUsers User[] @relation("UpdatorUsers")
   deletedUsers User[] @relation("UserDeletedBy")
 
-  deletedAt        DateTime?
-  deletedById      Int?
-  deletedBy        User?           @relation("UserDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  Device           Device[]
-  shopDiscounts    Discount[]      @relation("ShopDiscounts")
-  discountUsages   DiscountUsage[]
-  discounts        Discount[]
-  deletedDiscounts Discount[]      @relation("DiscountDeletedBy")
-  createdDiscounts Discount[]      @relation("DiscountCreatedBy")
-  updatedDiscounts Discount[]      @relation("DiscountUpdatedBy")
+  deletedAt         DateTime?
+  deletedById       Int?
+  deletedBy         User?              @relation("UserDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  Device            Device[]
+  shopDiscounts     Discount[]         @relation("ShopDiscounts")
+  discountUsages    DiscountUsage[]
+  discounts         Discount[]
+  deletedDiscounts  Discount[]         @relation("DiscountDeletedBy")
+  createdDiscounts  Discount[]         @relation("DiscountCreatedBy")
+  updatedDiscounts  Discount[]         @relation("DiscountUpdatedBy")
+  // [Video Feature Relations]
+  shopVideos        ShopVideo[] // Video do shop đăng tải
+  videoLikes        ShopVideoLike[] // Video user đã like
+  videoComments     ShopVideoComment[] // Comment của user
+  deletedShopVideos ShopVideo[]        @relation("ShopVideoDeletedBy")
 
   @@index([deletedAt])
 }
@@ -256,6 +261,8 @@ model Product {
   createdAt   DateTime              @default(now())
   updatedAt   DateTime              @updatedAt
   discounts   DiscountsOnProducts[]
+  // [Video Feature Relations]
+  shopVideos  ShopVideoProduct[] // Các video chứa sản phẩm này (dùng để hiện ở tab "Video về sản phẩm")
 
   @@index([deletedAt])
   @@index([name(ops: raw("gin_trgm_ops"))], type: Gin)
@@ -631,6 +638,84 @@ model Message {
   createdAt DateTime  @default(now())
 }
 
+/// [FEATURE: SHOP VIDEOS (Shoppable Videos)]
+
+model ShopVideo {
+  id           Int         @id @default(autoincrement())
+  caption      String?     @db.VarChar(2000)
+  videoUrl     String      @db.VarChar(1000) // URL video (S3/CDN)
+  thumbnailUrl String?     @db.VarChar(1000) // Ảnh bìa video
+  status       VideoStatus @default(ACTIVE)
+
+  // Counters (Denormalized fields for high-read performance)
+  viewCount    Int @default(0)
+  likeCount    Int @default(0)
+  commentCount Int @default(0)
+  shareCount   Int @default(0)
+
+  // Relations
+  shopId Int
+  shop   User @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  products ShopVideoProduct[] // List sản phẩm gắn trong video
+  likes    ShopVideoLike[]
+  comments ShopVideoComment[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  deletedById Int?
+  deletedBy   User?     @relation("ShopVideoDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([shopId])
+  @@index([status, createdAt(sort: Desc)]) // Index tối ưu cho lấy Feed video mới nhất
+}
+
+model ShopVideoProduct {
+  videoId Int
+  video   ShopVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  displayOrder Int      @default(0) // Thứ tự hiển thị trong danh sách sản phẩm của video
+  createdAt    DateTime @default(now())
+
+  @@id([videoId, productId])
+  @@index([productId])
+}
+
+model ShopVideoLike {
+  id      Int       @id @default(autoincrement())
+  videoId Int
+  video   ShopVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId  Int
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([videoId, userId]) // 1 người chỉ like 1 video 1 lần
+  @@index([userId])
+}
+
+model ShopVideoComment {
+  id      Int       @id @default(autoincrement())
+  content String    @db.VarChar(1000)
+  videoId Int
+  video   ShopVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId  Int
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  parentId Int? // Hỗ trợ reply comment (nested comments)
+  parent   ShopVideoComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  ShopVideoComment[] @relation("CommentReplies")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([videoId])
+}
+
 enum OrderStatus {
   PENDING_PAYMENT
   PENDING_PICKUP
@@ -689,4 +774,12 @@ enum HTTPMethod {
 enum MediaType {
   IMAGE
   VIDEO
+}
+
+enum VideoStatus {
+  DRAFT
+  PENDING
+  ACTIVE
+  REJECTED
+  HIDDEN
 }
