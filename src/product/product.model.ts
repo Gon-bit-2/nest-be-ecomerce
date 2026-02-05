@@ -64,6 +64,12 @@ export const GetManageProductQuerySchema = GetProductsQuerySchema.extend({
   createdById: z.coerce.number().int().positive(),
 })
 
+export const SearchProductQuerySchema = z.object({
+  q: z.string(),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().default(10),
+})
+
 export const GetProductsResSchema = z.object({
   data: z.array(
     ProductSchema.extend({
@@ -134,6 +140,7 @@ export const CreateProductBodySchema = ProductSchema.pick({
 export const UpdateProductBodySchema = CreateProductBodySchema
 
 export type GetProductsQueryType = z.infer<typeof GetProductsQuerySchema>
+export type SearchProductQueryType = z.infer<typeof SearchProductQuerySchema>
 export type GetManageProductQueryType = z.infer<typeof GetManageProductQuerySchema>
 export type GetProductsResType = z.infer<typeof GetProductsResSchema>
 export type GetProductParamsType = z.infer<typeof GetProductParamsSchema>
