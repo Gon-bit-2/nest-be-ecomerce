@@ -37,6 +37,7 @@ import { createKeyv } from '@keyv/redis'
 import { DiscountModule } from './discount/discount.module'
 import { ShopVideoModule } from './shop-video/shop-video.module'
 import { LoggerModule } from 'nestjs-pino'
+import { MessageModule } from './message/message.module'
 import pino from 'pino'
 @Module({
   imports: [
@@ -75,8 +76,8 @@ import pino from 'pino'
         port: 6379,
         */
         //
-        host: 'redis-13584.c292.ap-southeast-1-1.ec2.cloud.redislabs.com',
-        port: 13584,
+        host: envConfig.REDIS_HOST,
+        port: envConfig.REDIS_PORT,
         username: envConfig.REDIS_USERNAME,
         password: envConfig.REDIS_PASSWORD,
         maxRetriesPerRequest: null, // Bắt buộc: để BullMQ tự xử lý retry thay vì Redis client
@@ -127,6 +128,7 @@ import pino from 'pino'
         }),
       },
     }),
+    MessageModule,
   ],
   controllers: [AppController],
   providers: [

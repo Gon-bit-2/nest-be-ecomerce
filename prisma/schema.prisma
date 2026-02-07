@@ -123,6 +123,11 @@ model User {
   videoLikes        ShopVideoLike[] // Video user đã like
   videoComments     ShopVideoComment[] // Comment của user
   deletedShopVideos ShopVideo[]        @relation("ShopVideoDeletedBy")
+  // conversations     Conversation[]
+  // messages          Message[]
+
+  conversationsA Conversation[] @relation("ConversationUserA")
+  conversationsB Conversation[] @relation("ConversationUserB")
 
   @@index([deletedAt])
 }
@@ -626,18 +631,6 @@ model Websocket {
   createdAt DateTime @default(now())
 }
 
-model Message {
-  id         Int    @id @default(autoincrement())
-  fromUserId Int
-  fromUser   User   @relation("FromUser", fields: [fromUserId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  toUserId   Int
-  toUser     User   @relation("ToUser", fields: [toUserId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  content    String
-
-  readAt    DateTime?
-  createdAt DateTime  @default(now())
-}
-
 /// [FEATURE: SHOP VIDEOS (Shoppable Videos)]
 
 model ShopVideo {
@@ -714,6 +707,48 @@ model ShopVideoComment {
   updatedAt DateTime @updatedAt
 
   @@index([videoId])
+}
+
+model Conversation {
+  id Int @id @default(autoincrement())
+
+  // Người tham gia (luôn lưu userAId < userBId để tránh trùng lặp)
+  userAId       Int
+  userA         User      @relation("ConversationUserA", fields: [userAId], references: [id])
+  userBId       Int
+  userB         User      @relation("ConversationUserB", fields: [userBId], references: [id])
+  lastMessageId Int?      @unique
+  lastMessage   Message?  @relation("LastMessage", fields: [lastMessageId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt // Dùng để sort conversation mới nhất lên đầu
+  messages      Message[] @relation("ConversationMessages")
+
+  @@unique([userAId, userBId]) // 1 cặp user chỉ có 1 conversation
+  @@index([updatedAt])
+}
+
+// Cập nhật model Message
+model Message {
+  id Int @id @default(autoincrement())
+
+  conversationId Int
+  conversation   Conversation @relation("ConversationMessages", fields: [conversationId], references: [id], onDelete: Cascade)
+  fromUserId     Int
+  fromUser       User         @relation("FromUser", fields: [fromUserId], references: [id], onDelete: Cascade)
+
+  toUserId Int
+  toUser   User @relation("ToUser", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  content String    @db.Text // Nên dùng Text vì tin nhắn có thể dài
+  isRead  Boolean   @default(false)
+  readAt  DateTime?
+
+  createdAt               DateTime      @default(now())
+  // Relation ngược lại cho Conversation (Last Message)
+  conversationLastMessage Conversation? @relation("LastMessage")
+
+  @@index([conversationId])
+  @@index([createdAt])
 }
 
 enum OrderStatus {
