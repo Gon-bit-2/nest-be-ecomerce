@@ -201,6 +201,68 @@ Hệ thống có cơ chế giới hạn số lượng request để chống spam
 - **Phản hồi khi vượt quá:** HTTP Status **429 Too Many Requests**.
 - **Lưu ý:** Nếu Frontend gặp lỗi này thường xuyên trong quá trình phát triển/testing, hãy liên hệ Backend để điều chỉnh cấu hình Throttler.
 
+## 9. Tích Hợp Real-time Chat (Message Module)
+
+Hệ thống cung cấp tính năng nhắn tin theo thời gian thực (real-time chat) thông qua **WebSocket (Socket.IO)** và **REST API**.
+
+### a. Lấy dữ liệu ban đầu qua REST API
+
+- **Danh sách hội thoại:** Trình bày danh sách người dùng đã chat thông qua `GET /messages/conversations`. Trả về những người dùng cùng với thông tin tin nhắn mới nhất.
+- **Chi tiết tin nhắn:** Khi bấm vào 1 đoạn hội thoại, load lịch sử bằng API `GET /messages/conversations/:conversationId`. (Hỗ trợ phân trang nếu cần thiết theo design).
+
+### b. Kết nối WebSocket
+
+Kết nối tới socket server với path `/` theo mặc định của NestJS WebSocket Gateway.
+**Quan trọng:** Phải truyền kèm xác thực `accessToken` để được kết nối.
+
+```javascript
+import { io } from 'socket.io-client'
+
+const socket = io('http://localhost:9999', {
+  extraHeaders: {
+    Authorization: `Bearer ${accessToken}`, // Gửi qua Header (ưu tiên)
+  },
+  query: {
+    token: accessToken, // Hoặc gửi qua Query param
+  },
+})
+
+socket.on('connect', () => {
+  console.log('Connected to Real-time Chat!')
+})
+
+socket.on('disconnect', () => {
+  console.log('Disconnected from Real-time Chat!')
+})
+```
+
+### c. Lắng nghe tin nhắn mới
+
+Hệ thống bắn event trực tiếp tới `user_${userId}`, bạn cần lắng nghe sự kiện message từ backend trả về. Ví dụ: `receiveMessage` hoặc tên event tương ứng của backend quy định (hiện tại logic backend push event cần thống nhất tên event).
+
+### d. Gửi tin nhắn
+
+- Gửi tin nhắn gọi REST API `POST /messages` với `receiverId` và `content`.
+- Khi API xử lý xong, hệ thống qua WebSocket tự động push về người nhận (hoặc bạn có thể tự cập nhật UI optimistic trên thiết bị người gửi trước).
+
+## 10. Tích Hợp Shop Video Module (TikTok/Reels format)
+
+Chức năng lướt xem video giới thiệu sản phẩm của Shop tương tự như các nền tảng video ngắn.
+
+### a. Lấy danh sách Video
+
+- Gọi `GET /shop-videos?page=1&limit=10`.
+- Hiển thị UI theo dạng cuộn trang (swiping up/down) hoặc carousel dọc. Dữ liệu trả về sẽ bao gồm URL video (`videoUrl`) và các thông số tương tác (like, cmt).
+
+### b. Xử lý Tương Tác
+
+1. **Thích (Like):**
+   - Nút thả tim gọi API `POST /shop-videos/:id/like`.
+   - UI nên là **Optimistic Update**: Ngay khi click thì UI chuyển tim đỏ liền + tăng số đếm (dù API chưa trả về xong) để cho người xem cảm giác thao tác cực nhanh.
+2. **Bình luận (Comments):**
+   - Lấy danh sách bình luận (Public - không cần đăng nhập vẫn xem được): `GET /shop-videos/:id/comments` (Có phân trang).
+   - Thêm bình luận (Cần đăng nhập): `POST /shop-videos/:id/comments`.
+
 ---
 
 _Tài liệu này được dùng kèm với `API_LIST.md` để tra cứu chi tiết từng endpoint._

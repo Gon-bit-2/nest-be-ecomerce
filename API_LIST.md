@@ -1270,3 +1270,139 @@ _No Auth Headers_
   "rating": 4
 }
 ```
+
+---
+
+## Shop Video Module
+
+### List Shop Videos
+
+**GET** `/shop-videos?page=1&limit=10`
+
+_No Auth Headers_ (Public)
+
+### Get Shop Video Detail
+
+**GET** `/shop-videos/:id`
+
+_No Auth Headers_ (Public, but optimal if authenticated)
+
+### Create Shop Video
+
+**POST** `/shop-videos`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+{
+  "title": "Video title",
+  "videoUrl": "https://example.com/video.mp4",
+  "thumbnailUrl": "https://example.com/thumb.jpg",
+  "description": "Video description",
+  "productId": 1
+}
+```
+
+### Update Shop Video
+
+**PUT** `/shop-videos/:id`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+{
+  "title": "Updated title",
+  "description": "Updated description"
+}
+```
+
+### Delete Shop Video
+
+**DELETE** `/shop-videos/:id`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+### Toggle Like
+
+**POST** `/shop-videos/:id/like`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+_No Body_
+
+### Add Comment
+
+**POST** `/shop-videos/:id/comments`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+{
+  "content": "Nice video!"
+}
+```
+
+### Get Comments
+
+**GET** `/shop-videos/:id/comments?page=1&limit=20`
+
+_No Auth Headers_ (Public)
+
+---
+
+## Message Module
+
+### Send Message
+
+**POST** `/messages`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+{
+  "receiverId": 2,
+  "content": "Hello",
+  "type": "TEXT"
+}
+```
+
+### Get Conversations
+
+**GET** `/messages/conversations`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+_No Body_
+
+### Get Messages in Conversation
+
+**GET** `/messages/conversations/:conversationId`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+_No Body_
+
+### WebSocket Connection
+
+**Namespace/Path**: `/` (Default WebSocket Server)
+
+**Connection payload/headers**:
+Provide `Authorization: Bearer <accessToken>` in headers or query param `?token=<accessToken>`
+
+**Events**: Real-time events will be pushed to the client via `user_${userId}` room mapping natively.

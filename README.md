@@ -94,6 +94,8 @@ A comprehensive list of APIs is available in [API_LIST.md](./API_LIST.md).
   - `cart/`: Shopping cart
   - `payment/`: Payment processing (SePay webhook integration)
   - `shared/`: Shared models, constants, and utilities
+  - `message/`: Real-time messaging module
+  - `shop-video/`: Shop marketing videos module
 
 ## 🧪 Testing
 
