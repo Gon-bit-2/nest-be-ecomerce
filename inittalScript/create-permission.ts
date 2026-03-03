@@ -51,7 +51,7 @@ async function bootstrap() {
         }
       })
 
-      .filter((item) => item !== undefined)
+      .filter((item) => item !== undefined && HTTPMethod[item.method])
   console.log(availableRoutes)
 
   //tạo obj permissionInDbMap với key là [method-path]
