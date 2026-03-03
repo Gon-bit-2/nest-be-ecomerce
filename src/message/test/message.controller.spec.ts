@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing'
-import { MessageController } from './message.controller'
-import { MessageService } from './message.service'
-import { CreateMessageDTO, GetMessageParamsDTO } from './dto/message.dto'
+import { CreateMessageDTO, GetMessageParamsDTO } from 'src/message/dto/message.dto'
+import { MessageController } from 'src/message/message.controller'
+import { MessageService } from 'src/message/message.service'
 
 describe('MessageController', () => {
   let controller: MessageController

@@ -98,7 +98,7 @@ import pino from 'pino'
         return {
           stores: [
             createKeyv(
-              `redis://${envConfig.REDIS_USERNAME}:${envConfig.REDIS_PASSWORD}@redis-13584.c292.ap-southeast-1-1.ec2.cloud.redislabs.com:${envConfig.REDIS_PORT}`,
+              `redis://${envConfig.REDIS_USERNAME}:${envConfig.REDIS_PASSWORD}@redis-12766.crce194.ap-seast-1-1.ec2.cloud.redislabs.com:${envConfig.REDIS_PORT}`,
             ),
           ],
         }
