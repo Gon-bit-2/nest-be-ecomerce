@@ -6,7 +6,7 @@ import { AddCommentDTO, CreateShopVideoDTO, ShopVideoQueryDTO, UpdateShopVideoDT
 import { isPublic } from 'src/shared/decorators/auth.decorator'
 import { ZodSerializerDto } from 'nestjs-zod'
 
-@Controller('shop-videos')
+@Controller('shop-video')
 export class ShopVideoController {
   constructor(private readonly shopVideoService: ShopVideoService) {}
 
