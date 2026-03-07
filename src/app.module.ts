@@ -38,6 +38,7 @@ import { DiscountModule } from './discount/discount.module'
 import { ShopVideoModule } from './shop-video/shop-video.module'
 import { LoggerModule } from 'nestjs-pino'
 import { MessageModule } from './message/message.module'
+import { AddressModule } from './address/address.module'
 import pino from 'pino'
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import pino from 'pino'
     ReviewModule,
     DiscountModule,
     ShopVideoModule,
+    AddressModule,
     I18nModule.forRoot({
       fallbackLanguage: 'en',
       loaderOptions: {

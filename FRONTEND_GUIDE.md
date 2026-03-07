@@ -251,17 +251,160 @@ Chức năng lướt xem video giới thiệu sản phẩm của Shop tương t�
 
 ### a. Lấy danh sách Video
 
-- Gọi `GET /shop-videos?page=1&limit=10`.
+- Gọi `GET /shop-video?page=1&limit=10` (có thể lọc theo `shopId`).
 - Hiển thị UI theo dạng cuộn trang (swiping up/down) hoặc carousel dọc. Dữ liệu trả về sẽ bao gồm URL video (`videoUrl`) và các thông số tương tác (like, cmt).
 
 ### b. Xử lý Tương Tác
 
 1. **Thích (Like):**
-   - Nút thả tim gọi API `POST /shop-videos/:id/like`.
+   - Nút thả tim gọi API `POST /shop-video/:id/like`.
    - UI nên là **Optimistic Update**: Ngay khi click thì UI chuyển tim đỏ liền + tăng số đếm (dù API chưa trả về xong) để cho người xem cảm giác thao tác cực nhanh.
 2. **Bình luận (Comments):**
-   - Lấy danh sách bình luận (Public - không cần đăng nhập vẫn xem được): `GET /shop-videos/:id/comments` (Có phân trang).
-   - Thêm bình luận (Cần đăng nhập): `POST /shop-videos/:id/comments`.
+   - Lấy danh sách bình luận (Public - không cần đăng nhập vẫn xem được): `GET /shop-video/:id/comments` (Có phân trang).
+   - Thêm bình luận (Cần đăng nhập): `POST /shop-video/:id/comments`.
+   - Hỗ trợ trả lời bình luận (reply): gửi kèm `parentId` để reply một comment cụ thể.
+
+## 11. Tích Hợp Address Module (Quản lý Địa chỉ)
+
+Người dùng có thể lưu nhiều địa chỉ giao hàng và chọn một địa chỉ mặc định.
+
+### a. Quản lý Địa chỉ
+
+- **Danh sách:** `GET /address` — trả về tất cả địa chỉ của user, sắp xếp theo mặc định trước.
+- **Thêm mới:** `POST /address` với `name`, `phone`, `address`, `isDefault` (optional). Địa chỉ đầu tiên tự động trở thành mặc định.
+- **Cập nhật:** `PUT /address/:addressId` — partial update (chỉ truyền field cần sửa).
+- **Xóa:** `DELETE /address/:addressId` — nếu xóa địa chỉ mặc định, hệ thống tự động chọn địa chỉ mới nhất còn lại làm mặc định.
+- **Đặt mặc định:** `PUT /address/:addressId/default`.
+
+### b. Sử dụng Địa chỉ khi Đặt hàng
+
+Khi tạo đơn hàng (`POST /order`), bạn có thể:
+
+1. **Truyền `receiver` trực tiếp** — phù hợp khi user nhập tay:
+   ```json
+   { "shopId": 1, "receiver": { "name": "...", "phone": "...", "address": "..." }, "cartItemIds": [1] }
+   ```
+2. **Truyền `userAddressId`** — sử dụng địa chỉ đã lưu:
+   ```json
+   { "shopId": 1, "userAddressId": 1, "cartItemIds": [1] }
+   ```
+
+_Chỉ cần truyền một trong hai (`receiver` hoặc `userAddressId`)._
+
+## 12. Tìm Kiếm Sản Phẩm
+
+- Gọi `GET /product/search?q=keyword&page=1&limit=10` để tìm sản phẩm theo từ khóa.
+- Tham số `q` là bắt buộc.
+- Endpoint này tách biệt với `GET /product` (list with filters) và phù hợp cho thanh search bar trên giao diện.
+
+## 13. Tích Hợp Thanh Toán SePay (QR Code Transfer)
+
+Hệ thống sử dụng **SePay** để nhận thanh toán qua chuyển khoản ngân hàng. Backend xử lý xác nhận tự động qua Webhook.
+
+### a. Luồng Thanh Toán Tổng Quan
+
+```
+User đặt hàng:
+1. GET /payment/config → Lấy thông tin bank (accountNumber, bankCode, prefix)
+2. POST /order → Nhận paymentId
+→ Frontend gen QR từ config + paymentId
+→ Hiển thị màn hình QR Code
+→ User chuyển khoản với nội dung {prefix}{paymentId}
+→ SePay detect → Gọi webhook → Backend xác nhận
+→ WebSocket emit "payment" event → Frontend cập nhật UI
+```
+
+### b. Lấy Thông Tin Ngân Hàng
+
+Gọi API `GET /payment/config` (Public, không cần auth) để lấy thông tin tài khoản nhận tiền:
+
+```json
+{
+  "accountNumber": "0123456789",
+  "bankCode": "VCB",
+  "prefix": "PM"
+}
+```
+
+> **Khuyến nghị:** Gọi API này một lần khi khởi tạo app hoặc khi vào trang Checkout, cache lại kết quả.
+
+### c. Tạo QR Code Thanh Toán
+
+Sau khi gọi `POST /order` thành công, response trả về:
+
+```json
+{
+  "orders": [...],
+  "paymentId": 123
+}
+```
+
+**Frontend tự gen mã QR** bằng URL của SePay, kết hợp thông tin từ `GET /payment/config`:
+
+```javascript
+// Lấy config
+const config = await fetch('/payment/config').then(r => r.json())
+
+// Sau khi tạo order
+const order = await fetch('/order', { method: 'POST', ... }).then(r => r.json())
+
+// Gen QR URL
+const qrUrl = `https://qr.sepay.vn/img?acc=${config.accountNumber}&bank=${config.bankCode}&amount=${totalAmount}&des=${config.prefix}${order.paymentId}`
+```
+
+**Các tham số:**
+
+| Tham số  | Mô tả                            | Nguồn                                   |
+| -------- | -------------------------------- | --------------------------------------- |
+| `acc`    | Số tài khoản ngân hàng nhận tiền | `GET /payment/config` → `accountNumber` |
+| `bank`   | Mã ngân hàng (VCB, MB, ACB,...)  | `GET /payment/config` → `bankCode`      |
+| `amount` | Tổng tiền thanh toán             | Tính từ danh sách items trong order     |
+| `des`    | Nội dung chuyển khoản            | `{prefix}{paymentId}` (ví dụ `PM123`)   |
+
+> **⚠️ QUAN TRỌNG:** Nội dung chuyển khoản (`des`) **PHẢI** theo đúng format `{prefix}{paymentId}` (ví dụ `PM123`). Backend dùng prefix này để trích xuất `paymentId` và xác nhận thanh toán. Sai format sẽ khiến thanh toán không được nhận diện.
+
+### d. Hiển thị Màn Hình QR Code
+
+**Flow UI khuyến nghị:**
+
+1. User chọn phương thức thanh toán **"Chuyển khoản ngân hàng"** trên CheckoutPage
+2. Bấm **"Đặt hàng"** → Gọi `POST /order`
+3. Sau khi API trả về thành công → **Điều hướng sang màn hình QR Code riêng biệt** với:
+   - Mã QR (gen từ URL SePay)
+   - Thông tin chuyển khoản: Ngân hàng, STK, Số tiền, Nội dung CK
+   - Bộ đếm ngược 24h (thời gian chờ thanh toán trước khi tự động hủy)
+   - Trạng thái: "Đang chờ thanh toán..."
+4. Khi WebSocket nhận event `payment` → Cập nhật UI thành **"Thanh toán thành công!"** → Cho phép điều hướng về trang đơn hàng
+
+### e. Lắng Nghe Thanh Toán Real-time (WebSocket)
+
+Kết nối vào **namespace `payment`** để nhận thông báo thanh toán:
+
+```javascript
+import { io } from 'socket.io-client'
+
+const paymentSocket = io('http://localhost:9999/payment', {
+  extraHeaders: {
+    Authorization: `Bearer ${accessToken}`,
+  },
+})
+
+paymentSocket.on('payment', (data) => {
+  if (data.status === 'success') {
+    // Thanh toán thành công!
+    // → Cập nhật UI, hiển thị thông báo, điều hướng
+  }
+})
+```
+
+> **Lưu ý:** Namespace thanh toán là `/payment`, tách biệt với namespace chat mặc định.
+
+### f. Xử Lý Timeout & Hủy Đơn
+
+- Backend tự động **hủy đơn hàng sau 24 giờ** nếu chưa thanh toán (sử dụng BullMQ job queue)
+- Khi đơn bị hủy: Payment → `FAILED`, Orders → `CANCELLED`, stock được hoàn lại
+- Frontend nên hiển thị **bộ đếm ngược** trên trang QR và thông báo khi hết thời gian
+- User có thể chủ động hủy bằng `PUT /order/:orderId`
 
 ---
 

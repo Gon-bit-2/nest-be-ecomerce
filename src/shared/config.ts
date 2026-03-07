@@ -35,6 +35,8 @@ const ConfigSchema = z.object({
   REDIS_PASSWORD: z.string(),
   REDIS_HOST: z.string(),
   REDIS_PORT: z.coerce.number(),
+  PAYMENT_BANK_CODE: z.string(),
+  PAYMENT_ACCOUNT_NUMBER: z.string(),
 })
 
 const configServer = ConfigSchema.safeParse(process.env)

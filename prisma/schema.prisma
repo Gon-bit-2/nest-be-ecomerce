@@ -128,6 +128,7 @@ model User {
 
   conversationsA Conversation[] @relation("ConversationUserA")
   conversationsB Conversation[] @relation("ConversationUserB")
+  userAddresses  UserAddress[]
 
   @@index([deletedAt])
 }
@@ -153,6 +154,21 @@ model UserTranslation {
   updatedAt   DateTime  @updatedAt
 
   @@index([deletedAt])
+}
+
+model UserAddress {
+  id        Int     @id @default(autoincrement())
+  userId    Int
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  name      String  @db.VarChar(500)
+  phone     String  @db.VarChar(50)
+  address   String  @db.VarChar(1000)
+  isDefault Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model VerificationCode {

@@ -4,7 +4,7 @@ import { PrismaService } from 'src/shared/service/prisma.service'
 import {
   CancelOrderResType,
   CreateOrderBodyResType,
-  CreateOrderBodyType,
+  ResolvedCreateOrderItem,
   GetOrderDetailResType,
   GetOrderListQueryType,
   UpdateOrderStatusType,
@@ -62,7 +62,7 @@ export class OrderRepo {
   }
   async create(
     userId: number,
-    body: CreateOrderBodyType,
+    body: ResolvedCreateOrderItem[],
   ): Promise<{
     paymentId: number
     orders: CreateOrderBodyResType['orders']

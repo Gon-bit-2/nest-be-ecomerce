@@ -832,6 +832,19 @@ _No Body_
 - `orderBy`: "ASC" | "DESC" (default "DESC")
 - `sortBy`: "price" | "createdAt" | "sale" (default "createdAt")
 
+### Search Products
+
+**GET** `/product/search?q=keyword&page=1&limit=10`
+
+_No Auth Headers_
+_No Body_
+
+**Query Params:**
+
+- `q`: string (required) — search keyword
+- `page`: number (default 1)
+- `limit`: number (default 10)
+
 ### Get Product Detail
 
 **GET** `/product/:productId`
@@ -1060,6 +1073,18 @@ _No Body_
 ]
 ```
 
+**Note:** Either `receiver` or `userAddressId` must be provided. You can use a saved address instead of manually providing receiver info:
+
+```json
+[
+  {
+    "shopId": 1,
+    "userAddressId": 1,
+    "cartItemIds": [1, 2]
+  }
+]
+```
+
 ### Cancel Order
 
 **PUT** `/order/:orderId`
@@ -1070,15 +1095,60 @@ _No Body_
 
 _No Body_
 
+### Update Order Status
+
+**POST** `/order/:orderId/status`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+{
+  "status": "DELIVERED" // DELIVERED, RETURNED
+}
+```
+
 ---
 
 ## Payment Module
+
+### Payment Flow Overview
+
+1. Frontend gọi `GET /payment/config` → Lấy thông tin ngân hàng (`accountNumber`, `bankCode`, `prefix`)
+2. Frontend gọi `POST /order` → Backend tạo đơn hàng + Payment (PENDING) → Trả về `paymentId`
+3. Frontend gen QR Code từ `paymentId` + thông tin bank config → User chuyển khoản
+4. SePay phát hiện giao dịch → Gọi Webhook `POST /payment/receiver`
+5. Backend xác nhận thanh toán → Cập nhật Order sang `PENDING_PICKUP` → Emit WebSocket event `payment` tới user
+6. Nếu không thanh toán trong 24h → Tự động hủy đơn, hoàn lại stock
+
+### Get Payment Config
+
+**GET** `/payment/config`
+
+_No Auth Headers_ (Public)
+
+**Response:**
+
+```json
+{
+  "accountNumber": "0123456789",
+  "bankCode": "VCB",
+  "prefix": "PM"
+}
+```
+
+**Mô tả:** Trả về thông tin tài khoản ngân hàng nhận tiền và prefix nội dung chuyển khoản. Frontend dùng response này để gen mã QR SePay:
+
+```
+https://qr.sepay.vn/img?acc={accountNumber}&bank={bankCode}&amount={totalAmount}&des={prefix}{paymentId}
+```
 
 ### Webhook Receiver (SePay)
 
 **POST** `/payment/receiver`
 
-_No Auth Headers_ (Public Endpoint for Webhook)
+_No Auth Headers_ (Public Endpoint — Secured by API Key header)
 
 ```json
 {
@@ -1087,19 +1157,38 @@ _No Auth Headers_ (Public Endpoint for Webhook)
   "transactionDate": "2023-10-27 10:00:00",
   "accountNumber": "0123456789",
   "subAccount": null,
-  "amountIn": 0,
-  "amountOut": 0,
-  "accumulated": 0,
-  "code": "PAY123",
-  "transactionContent": "Thanh toan don hang",
-  "referenceNumber": null,
-  "body": null,
-  "transferType": "in", // or "out"
+  "code": "PM123",
+  "content": "PM123",
+  "transferType": "in", // "in" = tiền vào, "out" = tiền ra
   "transferAmount": 100000,
+  "accumulated": 500000,
   "referenceCode": null,
   "description": "Full sms content"
 }
 ```
+
+**Xử lý Backend:**
+
+- Backend trích xuất `paymentId` từ `code` hoặc `content` bằng prefix `PM` (ví dụ `PM123` → paymentId = 123)
+- Kiểm tra `transferAmount` có bằng tổng tiền đơn hàng không
+- Nếu hợp lệ → cập nhật Payment `SUCCESS`, Orders `PENDING_PICKUP`, xóa job auto-cancel
+- Gửi WebSocket event `payment` với `{ status: 'success' }` tới user
+
+### WebSocket Payment Notification
+
+**Namespace:** `payment`
+
+**Event:** `payment`
+
+**Data:**
+
+```json
+{
+  "status": "success"
+}
+```
+
+**Lưu ý:** Frontend cần kết nối vào namespace `payment` của WebSocket (không phải namespace mặc định) để nhận thông báo thanh toán thành công real-time.
 
 ---
 
@@ -1277,19 +1366,25 @@ _No Auth Headers_
 
 ### List Shop Videos
 
-**GET** `/shop-videos?page=1&limit=10`
+**GET** `/shop-video?page=1&limit=10`
 
 _No Auth Headers_ (Public)
 
+**Query Params:**
+
+- `page`: number (default 1)
+- `limit`: number (default 10)
+- `shopId`: number (optional)
+
 ### Get Shop Video Detail
 
-**GET** `/shop-videos/:id`
+**GET** `/shop-video/:id`
 
-_No Auth Headers_ (Public, but optimal if authenticated)
+_No Auth Headers_ (Public, but optimal if authenticated — returns whether current user has liked the video)
 
 ### Create Shop Video
 
-**POST** `/shop-videos`
+**POST** `/shop-video`
 
 **Headers**
 
@@ -1297,17 +1392,16 @@ _No Auth Headers_ (Public, but optimal if authenticated)
 
 ```json
 {
-  "title": "Video title",
+  "caption": "Video caption",
   "videoUrl": "https://example.com/video.mp4",
   "thumbnailUrl": "https://example.com/thumb.jpg",
-  "description": "Video description",
-  "productId": 1
+  "productIds": [1, 2]
 }
 ```
 
 ### Update Shop Video
 
-**PUT** `/shop-videos/:id`
+**PUT** `/shop-video/:id`
 
 **Headers**
 
@@ -1315,14 +1409,16 @@ _No Auth Headers_ (Public, but optimal if authenticated)
 
 ```json
 {
-  "title": "Updated title",
-  "description": "Updated description"
+  "caption": "Updated caption",
+  "status": "ACTIVE", // ACTIVE, INACTIVE
+  "thumbnailUrl": "https://example.com/new-thumb.jpg",
+  "productIds": [1, 3]
 }
 ```
 
 ### Delete Shop Video
 
-**DELETE** `/shop-videos/:id`
+**DELETE** `/shop-video/:id`
 
 **Headers**
 
@@ -1330,7 +1426,7 @@ _No Auth Headers_ (Public, but optimal if authenticated)
 
 ### Toggle Like
 
-**POST** `/shop-videos/:id/like`
+**POST** `/shop-video/:id/like`
 
 **Headers**
 
@@ -1340,7 +1436,7 @@ _No Body_
 
 ### Add Comment
 
-**POST** `/shop-videos/:id/comments`
+**POST** `/shop-video/:id/comments`
 
 **Headers**
 
@@ -1348,13 +1444,14 @@ _No Body_
 
 ```json
 {
-  "content": "Nice video!"
+  "content": "Nice video!",
+  "parentId": 1 // Optional — for reply to another comment
 }
 ```
 
 ### Get Comments
 
-**GET** `/shop-videos/:id/comments?page=1&limit=20`
+**GET** `/shop-video/:id/comments?page=1&limit=20`
 
 _No Auth Headers_ (Public)
 
@@ -1406,3 +1503,83 @@ _No Body_
 Provide `Authorization: Bearer <accessToken>` in headers or query param `?token=<accessToken>`
 
 **Events**: Real-time events will be pushed to the client via `user_${userId}` room mapping natively.
+
+---
+
+## Address Module
+
+### List Addresses
+
+**GET** `/address`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+_No Body_
+
+### Get Address Detail
+
+**GET** `/address/:addressId`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+_No Body_
+
+### Create Address
+
+**POST** `/address`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+{
+  "name": "John Doe",
+  "phone": "0123456789",
+  "address": "123 Main St, District 1, Ho Chi Minh City",
+  "isDefault": true // Optional, default: false. First address is automatically set as default.
+}
+```
+
+### Update Address
+
+**PUT** `/address/:addressId`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+{
+  "name": "Jane Doe", // Optional
+  "phone": "0987654321", // Optional
+  "address": "456 Second St, District 2, Ho Chi Minh City", // Optional
+  "isDefault": true // Optional
+}
+```
+
+### Delete Address
+
+**DELETE** `/address/:addressId`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+_No Body_
+
+**Note:** If the deleted address was the default, the most recently created address will be automatically set as the new default.
+
+### Set Default Address
+
+**PUT** `/address/:addressId/default`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+_No Body_
