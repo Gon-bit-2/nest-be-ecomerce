@@ -9,6 +9,7 @@ import { AccessTokenGuard } from 'src/shared/guard/access-token.guard'
 import { PaymentApiKeyGuard } from 'src/shared/guard/payment-api-key.guard'
 import { TwoFactorAuthService } from './service/2fa.service'
 import { S3Service } from 'src/shared/service/s3.service'
+import { CloudinaryService } from 'src/shared/service/cloudinary.service'
 import { SharedPaymentRepository } from './repositories/shared-payment.repo'
 import { SharedWebsocketRepository } from './repositories/shared-websocket.repo'
 @Global()
@@ -18,6 +19,7 @@ import { SharedWebsocketRepository } from './repositories/shared-websocket.repo'
     HashingService,
     TokenService,
     S3Service,
+    CloudinaryService,
     TwoFactorAuthService,
     ShareUserRepository,
     SharedPaymentRepository,
@@ -31,6 +33,7 @@ import { SharedWebsocketRepository } from './repositories/shared-websocket.repo'
     HashingService,
     TokenService,
     S3Service,
+    CloudinaryService,
     TwoFactorAuthService,
     ShareUserRepository,
     SharedPaymentRepository,

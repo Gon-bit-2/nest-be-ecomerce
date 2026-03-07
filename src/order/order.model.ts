@@ -31,15 +31,22 @@ export const GetOrderDetailResSchema = OrderSchema.extend({
 
 export const CreateOrderBodySchema = z
   .array(
-    z.object({
-      shopId: z.number(),
-      receiver: z.object({
-        name: z.string(),
-        phone: z.string(),
-        address: z.string(),
+    z
+      .object({
+        shopId: z.number(),
+        receiver: z
+          .object({
+            name: z.string(),
+            phone: z.string(),
+            address: z.string(),
+          })
+          .optional(),
+        userAddressId: z.number().int().positive().optional(),
+        cartItemIds: z.array(z.number().min(1)),
+      })
+      .refine((data) => data.receiver || data.userAddressId, {
+        message: 'Either receiver or userAddressId must be provided',
       }),
-      cartItemIds: z.array(z.number().min(1)),
-    }),
   )
   .min(1)
 
@@ -62,6 +69,11 @@ export type GetOrderListQueryType = z.infer<typeof GetOrderListQuerySchema>
 export type GetOrderDetailResType = z.infer<typeof GetOrderDetailResSchema>
 export type GetOrderParamsType = z.infer<typeof GetOrderParamsSchema>
 export type CreateOrderBodyType = z.infer<typeof CreateOrderBodySchema>
+export type ResolvedCreateOrderItem = {
+  shopId: number
+  receiver: { name: string; phone: string; address: string }
+  cartItemIds: number[]
+}
 export type CreateOrderBodyResType = z.infer<typeof CreateOrderBodyResSchema>
 export type CancelOrderResType = z.infer<typeof CancelOrderResSchema>
 export type UpdateOrderStatusType = z.infer<typeof UpdateOrderStatusSchema>

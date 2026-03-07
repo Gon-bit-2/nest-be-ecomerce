@@ -34,3 +34,11 @@ export const WebhookPaymentBodySchema = z.object({
 
 export type PaymentTransactionType = z.infer<typeof PaymentTransactionSchema>
 export type WebhookPaymentBodyType = z.infer<typeof WebhookPaymentBodySchema>
+
+export const PaymentConfigResSchema = z.object({
+  accountNumber: z.string(),
+  bankCode: z.string(),
+  prefix: z.string(),
+})
+
+export type PaymentConfigResType = z.infer<typeof PaymentConfigResSchema>

@@ -122,12 +122,15 @@ Cấu trúc lỗi trả về:
 
 ## 6. Upload File (Media)
 
+Toàn bộ file được lưu trữ trên **Cloudinary** (thay thế AWS S3). URL trả về sẽ có dạng `https://res.cloudinary.com/...`.
+
 ### a. Upload Ảnh (Images)
 
 Khi upload ảnh để sử dụng trong Product, Brand, SKU,...:
 
 1. **Upload ảnh lên server** bằng API `POST /media/images/upload`:
    - Header **BẮT BUỘC**: `Content-Type: multipart/form-data`
+   - Hỗ trợ format: JPEG, JPG, PNG, WebP. Max **5MB/file**.
    - Body gửi dạng `FormData`:
      ```javascript
      const formData = new FormData()
@@ -141,15 +144,9 @@ Khi upload ảnh để sử dụng trong Product, Brand, SKU,...:
    {
      "data": [
        {
-         "url": "https://ecom-be-nestjs.s3.us-east-1.amazonaws.com/images/abc123.png",
+         "url": "https://res.cloudinary.com/xxx/image/upload/v.../images/abc123.png",
          "name": "product-image.png",
-         "key": "images/abc123.png",
-         "type": "image/png"
-       },
-       {
-         "url": "https://ecom-be-nestjs.s3.us-east-1.amazonaws.com/images/def456.png",
-         "name": "product-image2.png",
-         "key": "images/def456.png",
+         "key": "images/abc123",
          "type": "image/png"
        }
      ]
@@ -163,11 +160,10 @@ Khi upload ảnh để sử dụng trong Product, Brand, SKU,...:
    ```javascript
    // ❌ SAI - Đừng làm như thế này
    const wrongImages = response.data.map((item) => JSON.stringify(item))
-   // Result: ["{data: [{url: https://...}]}", ...]
 
    // ✅ ĐÚNG - Làm như thế này
    const correctImages = response.data.map((item) => item.url)
-   // Result: ["https://...", "https://..."]
+   // Result: ["https://res.cloudinary.com/...", "https://res.cloudinary.com/..."]
    ```
 
 4. **Sử dụng URLs khi tạo/cập nhật Product**:
@@ -175,17 +171,43 @@ Khi upload ảnh để sử dụng trong Product, Brand, SKU,...:
    {
      "name": "Áo thun",
      "images": [
-       "https://ecom-be-nestjs.s3.us-east-1.amazonaws.com/images/abc123.png",
-       "https://ecom-be-nestjs.s3.us-east-1.amazonaws.com/images/def456.png"
-     ],
-     ...
+       "https://res.cloudinary.com/xxx/image/upload/v.../images/abc123.png",
+       "https://res.cloudinary.com/xxx/image/upload/v.../images/def456.png"
+     ]
    }
    ```
 
-### b. Lưu Ý Quan Trọng
+### b. Upload Video
+
+Khi cần upload video riêng lẻ (không qua Shop Video module):
+
+1. **Upload video lên server** bằng API `POST /media/videos/upload`:
+   - Header **BẮT BUỘC**: `Content-Type: multipart/form-data`
+   - Hỗ trợ format: MP4, WebM, QuickTime, AVI, MKV. Max **100MB/file**. Tối đa **10 file**.
+   - Body gửi dạng `FormData`:
+     ```javascript
+     const formData = new FormData()
+     formData.append('file', videoFile)
+     ```
+
+2. **Response** cùng format với upload ảnh:
+   ```json
+   {
+     "data": [
+       {
+         "url": "https://res.cloudinary.com/xxx/video/upload/v.../videos/video123.mp4",
+         "name": "my-video.mp4",
+         "key": "videos/video123",
+         "type": "video/mp4"
+       }
+     ]
+   }
+   ```
+
+### c. Lưu Ý Quan Trọng
 
 - Field `images` trong Product/SKU **PHẢI** là **array of string URLs**, KHÔNG phải object hay stringified object
-- Backend đã có xử lý tự động để convert format cũ (nếu có) sang format mới, nhưng Frontend nên gửi đúng format ngay từ đầu
+- URL trả về từ Cloudinary đã có dạng HTTPS, có thể sử dụng trực tiếp
 - Tương tự áp dụng cho field `image` trong SKU (chỉ gửi URL string, không phải object)
 
 ## 7. Các Lưu Ý Khác
@@ -249,19 +271,191 @@ Hệ thống bắn event trực tiếp tới `user_${userId}`, bạn cần lắn
 
 Chức năng lướt xem video giới thiệu sản phẩm của Shop tương tự như các nền tảng video ngắn.
 
-### a. Lấy danh sách Video
+### a. Tạo Video (Seller)
 
-- Gọi `GET /shop-videos?page=1&limit=10`.
+Seller chỉ cần upload file video, hệ thống tự động xử lý mọi thứ:
+
+```javascript
+const formData = new FormData()
+formData.append('video', videoFile) // Bắt buộc — file video (MP4, WebM, QuickTime, AVI, MKV). Max 100MB
+formData.append('caption', 'Mô tả video') // Optional
+formData.append('thumbnailUrl', 'https://...') // Optional — URL thumbnail (upload trước qua POST /media/images/upload)
+formData.append('productIds', JSON.stringify([1, 2, 3])) // Optional — JSON array product IDs
+
+const response = await fetch('/shop-video', {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${accessToken}`,
+    // KHÔNG set Content-Type, browser tự set multipart/form-data
+  },
+  body: formData,
+})
+```
+
+**Flow tạo video hoàn chỉnh:**
+
+1. (Optional) Upload thumbnail trước: `POST /media/images/upload` → lấy `url`
+2. Gọi `POST /shop-video` với `multipart/form-data` gửi file video + metadata
+3. Hệ thống tự upload video lên Cloudinary → tạo record DB → trả kết quả
+
+> **Lưu ý:** Không cần upload video riêng rồi truyền URL. Chỉ cần gửi file trực tiếp, hệ thống lo phần còn lại.
+
+### b. Lấy danh sách Video
+
+- Gọi `GET /shop-video?page=1&limit=10` (có thể lọc theo `shopId`).
 - Hiển thị UI theo dạng cuộn trang (swiping up/down) hoặc carousel dọc. Dữ liệu trả về sẽ bao gồm URL video (`videoUrl`) và các thông số tương tác (like, cmt).
 
-### b. Xử lý Tương Tác
+### c. Xử lý Tương Tác
 
 1. **Thích (Like):**
-   - Nút thả tim gọi API `POST /shop-videos/:id/like`.
+   - Nút thả tim gọi API `POST /shop-video/:id/like`.
    - UI nên là **Optimistic Update**: Ngay khi click thì UI chuyển tim đỏ liền + tăng số đếm (dù API chưa trả về xong) để cho người xem cảm giác thao tác cực nhanh.
 2. **Bình luận (Comments):**
-   - Lấy danh sách bình luận (Public - không cần đăng nhập vẫn xem được): `GET /shop-videos/:id/comments` (Có phân trang).
-   - Thêm bình luận (Cần đăng nhập): `POST /shop-videos/:id/comments`.
+   - Lấy danh sách bình luận (Public - không cần đăng nhập vẫn xem được): `GET /shop-video/:id/comments` (Có phân trang).
+   - Thêm bình luận (Cần đăng nhập): `POST /shop-video/:id/comments`.
+   - Hỗ trợ trả lời bình luận (reply): gửi kèm `parentId` để reply một comment cụ thể.
+
+## 11. Tích Hợp Address Module (Quản lý Địa chỉ)
+
+Người dùng có thể lưu nhiều địa chỉ giao hàng và chọn một địa chỉ mặc định.
+
+### a. Quản lý Địa chỉ
+
+- **Danh sách:** `GET /address` — trả về tất cả địa chỉ của user, sắp xếp theo mặc định trước.
+- **Thêm mới:** `POST /address` với `name`, `phone`, `address`, `isDefault` (optional). Địa chỉ đầu tiên tự động trở thành mặc định.
+- **Cập nhật:** `PUT /address/:addressId` — partial update (chỉ truyền field cần sửa).
+- **Xóa:** `DELETE /address/:addressId` — nếu xóa địa chỉ mặc định, hệ thống tự động chọn địa chỉ mới nhất còn lại làm mặc định.
+- **Đặt mặc định:** `PUT /address/:addressId/default`.
+
+### b. Sử dụng Địa chỉ khi Đặt hàng
+
+Khi tạo đơn hàng (`POST /order`), bạn có thể:
+
+1. **Truyền `receiver` trực tiếp** — phù hợp khi user nhập tay:
+   ```json
+   { "shopId": 1, "receiver": { "name": "...", "phone": "...", "address": "..." }, "cartItemIds": [1] }
+   ```
+2. **Truyền `userAddressId`** — sử dụng địa chỉ đã lưu:
+   ```json
+   { "shopId": 1, "userAddressId": 1, "cartItemIds": [1] }
+   ```
+
+_Chỉ cần truyền một trong hai (`receiver` hoặc `userAddressId`)._
+
+## 12. Tìm Kiếm Sản Phẩm
+
+- Gọi `GET /product/search?q=keyword&page=1&limit=10` để tìm sản phẩm theo từ khóa.
+- Tham số `q` là bắt buộc.
+- Endpoint này tách biệt với `GET /product` (list with filters) và phù hợp cho thanh search bar trên giao diện.
+
+## 13. Tích Hợp Thanh Toán SePay (QR Code Transfer)
+
+Hệ thống sử dụng **SePay** để nhận thanh toán qua chuyển khoản ngân hàng. Backend xử lý xác nhận tự động qua Webhook.
+
+### a. Luồng Thanh Toán Tổng Quan
+
+```
+User đặt hàng:
+1. GET /payment/config → Lấy thông tin bank (accountNumber, bankCode, prefix)
+2. POST /order → Nhận paymentId
+→ Frontend gen QR từ config + paymentId
+→ Hiển thị màn hình QR Code
+→ User chuyển khoản với nội dung {prefix}{paymentId}
+→ SePay detect → Gọi webhook → Backend xác nhận
+→ WebSocket emit "payment" event → Frontend cập nhật UI
+```
+
+### b. Lấy Thông Tin Ngân Hàng
+
+Gọi API `GET /payment/config` (Public, không cần auth) để lấy thông tin tài khoản nhận tiền:
+
+```json
+{
+  "accountNumber": "0123456789",
+  "bankCode": "VCB",
+  "prefix": "PM"
+}
+```
+
+> **Khuyến nghị:** Gọi API này một lần khi khởi tạo app hoặc khi vào trang Checkout, cache lại kết quả.
+
+### c. Tạo QR Code Thanh Toán
+
+Sau khi gọi `POST /order` thành công, response trả về:
+
+```json
+{
+  "orders": [...],
+  "paymentId": 123
+}
+```
+
+**Frontend tự gen mã QR** bằng URL của SePay, kết hợp thông tin từ `GET /payment/config`:
+
+```javascript
+// Lấy config
+const config = await fetch('/payment/config').then(r => r.json())
+
+// Sau khi tạo order
+const order = await fetch('/order', { method: 'POST', ... }).then(r => r.json())
+
+// Gen QR URL
+const qrUrl = `https://qr.sepay.vn/img?acc=${config.accountNumber}&bank=${config.bankCode}&amount=${totalAmount}&des=${config.prefix}${order.paymentId}`
+```
+
+**Các tham số:**
+
+| Tham số  | Mô tả                            | Nguồn                                   |
+| -------- | -------------------------------- | --------------------------------------- |
+| `acc`    | Số tài khoản ngân hàng nhận tiền | `GET /payment/config` → `accountNumber` |
+| `bank`   | Mã ngân hàng (VCB, MB, ACB,...)  | `GET /payment/config` → `bankCode`      |
+| `amount` | Tổng tiền thanh toán             | Tính từ danh sách items trong order     |
+| `des`    | Nội dung chuyển khoản            | `{prefix}{paymentId}` (ví dụ `PM123`)   |
+
+> **⚠️ QUAN TRỌNG:** Nội dung chuyển khoản (`des`) **PHẢI** theo đúng format `{prefix}{paymentId}` (ví dụ `PM123`). Backend dùng prefix này để trích xuất `paymentId` và xác nhận thanh toán. Sai format sẽ khiến thanh toán không được nhận diện.
+
+### d. Hiển thị Màn Hình QR Code
+
+**Flow UI khuyến nghị:**
+
+1. User chọn phương thức thanh toán **"Chuyển khoản ngân hàng"** trên CheckoutPage
+2. Bấm **"Đặt hàng"** → Gọi `POST /order`
+3. Sau khi API trả về thành công → **Điều hướng sang màn hình QR Code riêng biệt** với:
+   - Mã QR (gen từ URL SePay)
+   - Thông tin chuyển khoản: Ngân hàng, STK, Số tiền, Nội dung CK
+   - Bộ đếm ngược 24h (thời gian chờ thanh toán trước khi tự động hủy)
+   - Trạng thái: "Đang chờ thanh toán..."
+4. Khi WebSocket nhận event `payment` → Cập nhật UI thành **"Thanh toán thành công!"** → Cho phép điều hướng về trang đơn hàng
+
+### e. Lắng Nghe Thanh Toán Real-time (WebSocket)
+
+Kết nối vào **namespace `payment`** để nhận thông báo thanh toán:
+
+```javascript
+import { io } from 'socket.io-client'
+
+const paymentSocket = io('http://localhost:9999/payment', {
+  extraHeaders: {
+    Authorization: `Bearer ${accessToken}`,
+  },
+})
+
+paymentSocket.on('payment', (data) => {
+  if (data.status === 'success') {
+    // Thanh toán thành công!
+    // → Cập nhật UI, hiển thị thông báo, điều hướng
+  }
+})
+```
+
+> **Lưu ý:** Namespace thanh toán là `/payment`, tách biệt với namespace chat mặc định.
+
+### f. Xử Lý Timeout & Hủy Đơn
+
+- Backend tự động **hủy đơn hàng sau 24 giờ** nếu chưa thanh toán (sử dụng BullMQ job queue)
+- Khi đơn bị hủy: Payment → `FAILED`, Orders → `CANCELLED`, stock được hoàn lại
+- Frontend nên hiển thị **bộ đếm ngược** trên trang QR và thông báo khi hết thời gian
+- User có thể chủ động hủy bằng `PUT /order/:orderId`
 
 ---
 

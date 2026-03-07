@@ -1,7 +1,7 @@
-import { Body, Controller, Post } from '@nestjs/common'
+import { Body, Controller, Get, Post } from '@nestjs/common'
 import { PaymentService } from './payment.service'
 import { Auth, isPublic } from 'src/shared/decorators/auth.decorator'
-import { WebhookPaymentBodyDTO } from './dto/payment.dto'
+import { PaymentConfigResDTO, WebhookPaymentBodyDTO } from './dto/payment.dto'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { MessageResDTO } from 'src/shared/dtos/response.dto'
 import { ApiSecurity } from '@nestjs/swagger'
@@ -10,6 +10,13 @@ import { ApiSecurity } from '@nestjs/swagger'
 @ApiSecurity('payment-api-key')
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
+
+  @Get('config')
+  @isPublic()
+  @ZodSerializerDto(PaymentConfigResDTO)
+  getConfig() {
+    return this.paymentService.getConfig()
+  }
 
   @Post('receiver')
   @isPublic()

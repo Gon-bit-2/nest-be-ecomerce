@@ -5,6 +5,8 @@ import { SharedWebsocketRepository } from 'src/shared/repositories/shared-websoc
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets'
 import { Server } from 'socket.io'
 import { generateRoomUserId } from 'src/shared/helpers'
+import envConfig from 'src/shared/config'
+import { PAYMENT_CODE_PREFIX } from 'src/shared/constants/other.constant'
 
 @Injectable()
 @WebSocketGateway({ namespace: 'payment' })
@@ -33,6 +35,14 @@ export class PaymentService {
     // }
     return {
       message: 'Payment Success',
+    }
+  }
+
+  getConfig() {
+    return {
+      accountNumber: envConfig.PAYMENT_ACCOUNT_NUMBER,
+      bankCode: envConfig.PAYMENT_BANK_CODE,
+      prefix: PAYMENT_CODE_PREFIX,
     }
   }
 }

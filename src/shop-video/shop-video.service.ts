@@ -1,19 +1,37 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { ShopVideoRepo } from './repository/shop-video.repo'
-import {
-  AddCommentBodyType,
-  CreateShopVideoBodyType,
-  ShopVideoQueryType,
-  UpdateShopVideoBodyType,
-} from './model/shop-video.model'
+import { AddCommentBodyType, ShopVideoQueryType, UpdateShopVideoBodyType } from './model/shop-video.model'
+import { CloudinaryService } from 'src/shared/service/cloudinary.service'
+import { unlink } from 'fs'
 
 @Injectable()
 export class ShopVideoService {
-  constructor(private readonly shopVideoRepo: ShopVideoRepo) {}
+  constructor(
+    private readonly shopVideoRepo: ShopVideoRepo,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
-  async create(shopId: number, body: CreateShopVideoBodyType) {
+  async create(
+    shopId: number,
+    file: Express.Multer.File,
+    metadata: { caption?: string; thumbnailUrl?: string; productIds?: number[] },
+  ) {
+    const uploaded = await this.cloudinaryService.uploadFile({
+      fileName: file.filename,
+      filePath: file.path,
+      contentType: file.mimetype,
+      folder: 'videos',
+    })
+
+    unlink(file.path, (err) => {
+      if (err) console.error('Error deleting temp file:', err)
+    })
+
     return this.shopVideoRepo.create({
-      ...body,
+      videoUrl: uploaded.Location,
+      caption: metadata.caption,
+      thumbnailUrl: metadata.thumbnailUrl,
+      productIds: metadata.productIds,
       shopId,
     })
   }
