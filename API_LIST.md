@@ -417,7 +417,50 @@ _No Body_
 
 _Form Data:_
 
-- `file`: (Binary File)
+- `file`: (Binary File) — Hỗ trợ: JPEG, JPG, PNG, WebP. Max 5MB/file. Có thể upload nhiều file cùng lúc.
+
+**Response:**
+
+```json
+{
+  "data": [
+    {
+      "url": "https://res.cloudinary.com/xxx/image/upload/v.../images/abc123.png",
+      "name": "product-image.png",
+      "key": "images/abc123",
+      "type": "image/png"
+    }
+  ]
+}
+```
+
+### Upload Video
+
+**POST** `/media/videos/upload`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+- `Content-Type`: `multipart/form-data`
+
+_Form Data:_
+
+- `file`: (Binary File) — Hỗ trợ: MP4, WebM, QuickTime, AVI, MKV. Max 100MB/file. Tối đa 10 file.
+
+**Response:**
+
+```json
+{
+  "data": [
+    {
+      "url": "https://res.cloudinary.com/xxx/video/upload/v.../videos/video123.mp4",
+      "name": "shop-video.mp4",
+      "key": "videos/video123",
+      "type": "video/mp4"
+    }
+  ]
+}
+```
 
 ### Serve Static File
 
@@ -435,9 +478,11 @@ _No Auth Headers_
 ```json
 {
   "fileName": "image.png",
-  "fileSize": "1024" // string representation of size
+  "fileSize": "1024"
 }
 ```
+
+> **Lưu ý:** Toàn bộ file (ảnh/video) hiện được lưu trữ trên **Cloudinary**. URL trả về sẽ có dạng `https://res.cloudinary.com/...`.
 
 ---
 
@@ -1389,15 +1434,33 @@ _No Auth Headers_ (Public, but optimal if authenticated — returns whether curr
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
+- `Content-Type`: `multipart/form-data`
+
+_Form Data:_
+
+- `video`: (Binary File) — **Bắt buộc**. File video (MP4, WebM, QuickTime, AVI, MKV). Max 100MB.
+- `caption`: (String, optional) — Mô tả video, tối đa 2000 ký tự.
+- `thumbnailUrl`: (String, optional) — URL thumbnail (upload ảnh trước qua `POST /media/images/upload`).
+- `productIds`: (String, optional) — JSON array các product ID liên kết. Ví dụ: `[1, 2, 3]`
+
+**Lưu ý:** Seller chỉ cần tải video lên, hệ thống tự động upload lên Cloudinary và tạo record.
+
+**Response:**
 
 ```json
 {
+  "id": 1,
   "caption": "Video caption",
-  "videoUrl": "https://example.com/video.mp4",
+  "videoUrl": "https://res.cloudinary.com/xxx/video/upload/v.../videos/video123.mp4",
   "thumbnailUrl": "https://example.com/thumb.jpg",
-  "productIds": [1, 2]
+  "status": "ACTIVE",
+  "shopId": 1,
+  "products": [...],
+  "shop": { "id": 1, "name": "Shop Name", "avatar": "..." }
 }
 ```
+
+````
 
 ### Update Shop Video
 
@@ -1414,7 +1477,7 @@ _No Auth Headers_ (Public, but optimal if authenticated — returns whether curr
   "thumbnailUrl": "https://example.com/new-thumb.jpg",
   "productIds": [1, 3]
 }
-```
+````
 
 ### Delete Shop Video
 

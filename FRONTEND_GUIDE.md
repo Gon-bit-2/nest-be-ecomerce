@@ -122,12 +122,15 @@ Cấu trúc lỗi trả về:
 
 ## 6. Upload File (Media)
 
+Toàn bộ file được lưu trữ trên **Cloudinary** (thay thế AWS S3). URL trả về sẽ có dạng `https://res.cloudinary.com/...`.
+
 ### a. Upload Ảnh (Images)
 
 Khi upload ảnh để sử dụng trong Product, Brand, SKU,...:
 
 1. **Upload ảnh lên server** bằng API `POST /media/images/upload`:
    - Header **BẮT BUỘC**: `Content-Type: multipart/form-data`
+   - Hỗ trợ format: JPEG, JPG, PNG, WebP. Max **5MB/file**.
    - Body gửi dạng `FormData`:
      ```javascript
      const formData = new FormData()
@@ -141,15 +144,9 @@ Khi upload ảnh để sử dụng trong Product, Brand, SKU,...:
    {
      "data": [
        {
-         "url": "https://ecom-be-nestjs.s3.us-east-1.amazonaws.com/images/abc123.png",
+         "url": "https://res.cloudinary.com/xxx/image/upload/v.../images/abc123.png",
          "name": "product-image.png",
-         "key": "images/abc123.png",
-         "type": "image/png"
-       },
-       {
-         "url": "https://ecom-be-nestjs.s3.us-east-1.amazonaws.com/images/def456.png",
-         "name": "product-image2.png",
-         "key": "images/def456.png",
+         "key": "images/abc123",
          "type": "image/png"
        }
      ]
@@ -163,11 +160,10 @@ Khi upload ảnh để sử dụng trong Product, Brand, SKU,...:
    ```javascript
    // ❌ SAI - Đừng làm như thế này
    const wrongImages = response.data.map((item) => JSON.stringify(item))
-   // Result: ["{data: [{url: https://...}]}", ...]
 
    // ✅ ĐÚNG - Làm như thế này
    const correctImages = response.data.map((item) => item.url)
-   // Result: ["https://...", "https://..."]
+   // Result: ["https://res.cloudinary.com/...", "https://res.cloudinary.com/..."]
    ```
 
 4. **Sử dụng URLs khi tạo/cập nhật Product**:
@@ -175,17 +171,43 @@ Khi upload ảnh để sử dụng trong Product, Brand, SKU,...:
    {
      "name": "Áo thun",
      "images": [
-       "https://ecom-be-nestjs.s3.us-east-1.amazonaws.com/images/abc123.png",
-       "https://ecom-be-nestjs.s3.us-east-1.amazonaws.com/images/def456.png"
-     ],
-     ...
+       "https://res.cloudinary.com/xxx/image/upload/v.../images/abc123.png",
+       "https://res.cloudinary.com/xxx/image/upload/v.../images/def456.png"
+     ]
    }
    ```
 
-### b. Lưu Ý Quan Trọng
+### b. Upload Video
+
+Khi cần upload video riêng lẻ (không qua Shop Video module):
+
+1. **Upload video lên server** bằng API `POST /media/videos/upload`:
+   - Header **BẮT BUỘC**: `Content-Type: multipart/form-data`
+   - Hỗ trợ format: MP4, WebM, QuickTime, AVI, MKV. Max **100MB/file**. Tối đa **10 file**.
+   - Body gửi dạng `FormData`:
+     ```javascript
+     const formData = new FormData()
+     formData.append('file', videoFile)
+     ```
+
+2. **Response** cùng format với upload ảnh:
+   ```json
+   {
+     "data": [
+       {
+         "url": "https://res.cloudinary.com/xxx/video/upload/v.../videos/video123.mp4",
+         "name": "my-video.mp4",
+         "key": "videos/video123",
+         "type": "video/mp4"
+       }
+     ]
+   }
+   ```
+
+### c. Lưu Ý Quan Trọng
 
 - Field `images` trong Product/SKU **PHẢI** là **array of string URLs**, KHÔNG phải object hay stringified object
-- Backend đã có xử lý tự động để convert format cũ (nếu có) sang format mới, nhưng Frontend nên gửi đúng format ngay từ đầu
+- URL trả về từ Cloudinary đã có dạng HTTPS, có thể sử dụng trực tiếp
 - Tương tự áp dụng cho field `image` trong SKU (chỉ gửi URL string, không phải object)
 
 ## 7. Các Lưu Ý Khác
@@ -249,12 +271,41 @@ Hệ thống bắn event trực tiếp tới `user_${userId}`, bạn cần lắn
 
 Chức năng lướt xem video giới thiệu sản phẩm của Shop tương tự như các nền tảng video ngắn.
 
-### a. Lấy danh sách Video
+### a. Tạo Video (Seller)
+
+Seller chỉ cần upload file video, hệ thống tự động xử lý mọi thứ:
+
+```javascript
+const formData = new FormData()
+formData.append('video', videoFile) // Bắt buộc — file video (MP4, WebM, QuickTime, AVI, MKV). Max 100MB
+formData.append('caption', 'Mô tả video') // Optional
+formData.append('thumbnailUrl', 'https://...') // Optional — URL thumbnail (upload trước qua POST /media/images/upload)
+formData.append('productIds', JSON.stringify([1, 2, 3])) // Optional — JSON array product IDs
+
+const response = await fetch('/shop-video', {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${accessToken}`,
+    // KHÔNG set Content-Type, browser tự set multipart/form-data
+  },
+  body: formData,
+})
+```
+
+**Flow tạo video hoàn chỉnh:**
+
+1. (Optional) Upload thumbnail trước: `POST /media/images/upload` → lấy `url`
+2. Gọi `POST /shop-video` với `multipart/form-data` gửi file video + metadata
+3. Hệ thống tự upload video lên Cloudinary → tạo record DB → trả kết quả
+
+> **Lưu ý:** Không cần upload video riêng rồi truyền URL. Chỉ cần gửi file trực tiếp, hệ thống lo phần còn lại.
+
+### b. Lấy danh sách Video
 
 - Gọi `GET /shop-video?page=1&limit=10` (có thể lọc theo `shopId`).
 - Hiển thị UI theo dạng cuộn trang (swiping up/down) hoặc carousel dọc. Dữ liệu trả về sẽ bao gồm URL video (`videoUrl`) và các thông số tương tác (like, cmt).
 
-### b. Xử lý Tương Tác
+### c. Xử lý Tương Tác
 
 1. **Thích (Like):**
    - Nút thả tim gọi API `POST /shop-video/:id/like`.

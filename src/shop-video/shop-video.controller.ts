@@ -1,19 +1,55 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  MaxFileSizeValidator,
+  Param,
+  ParseIntPipe,
+  Post,
+  Put,
+  Query,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common'
 import { ShopVideoService } from './shop-video.service'
 import { ActiveUser } from 'src/shared/decorators/active-user.decorator'
 import { type AccessTokenPayload } from 'src/shared/types/jwt.type'
-import { AddCommentDTO, CreateShopVideoDTO, ShopVideoQueryDTO, UpdateShopVideoDTO } from './dto/shop-video.dto'
+import { AddCommentDTO, ShopVideoQueryDTO, UpdateShopVideoDTO } from './dto/shop-video.dto'
 import { isPublic } from 'src/shared/decorators/auth.decorator'
-import { ZodSerializerDto } from 'nestjs-zod'
+import { FileInterceptor } from '@nestjs/platform-express'
+import { ParseFilePipeWithUnlink } from 'src/media/parse-file-pipe-with-unlink.pipe'
+import { VideoMimeTypeValidator } from 'src/media/video-mime-type.validator'
 
 @Controller('shop-video')
 export class ShopVideoController {
   constructor(private readonly shopVideoService: ShopVideoService) {}
 
   @Post()
-  @ZodSerializerDto(CreateShopVideoDTO)
-  async create(@ActiveUser() user: AccessTokenPayload, @Body() body: CreateShopVideoDTO) {
-    return this.shopVideoService.create(user.userId, body)
+  @UseInterceptors(FileInterceptor('video'))
+  async create(
+    @ActiveUser() user: AccessTokenPayload,
+    @UploadedFile(
+      new ParseFilePipeWithUnlink({
+        validators: [
+          new MaxFileSizeValidator({
+            maxSize: 1024 * 1024 * 100, // 100MB
+          }),
+          new VideoMimeTypeValidator(),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+    @Body('caption') caption?: string,
+    @Body('thumbnailUrl') thumbnailUrl?: string,
+    @Body('productIds') productIds?: string,
+  ) {
+    const parsedProductIds = productIds ? JSON.parse(productIds) : undefined
+    return this.shopVideoService.create(user.userId, file, {
+      caption,
+      thumbnailUrl,
+      productIds: parsedProductIds,
+    })
   }
 
   @Get()
