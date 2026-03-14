@@ -21,6 +21,8 @@ export const OrderSchema = z.object({
     phone: z.string(),
     address: z.string(),
   }),
+  shippingFee: z.number().default(0),
+  discountAmount: z.number().default(0),
   createdById: z.number().nullable(),
   updatedById: z.number().nullable(),
   deletedById: z.number().nullable(),

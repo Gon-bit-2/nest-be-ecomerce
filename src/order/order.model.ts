@@ -43,6 +43,8 @@ export const CreateOrderBodySchema = z
           .optional(),
         userAddressId: z.number().int().positive().optional(),
         cartItemIds: z.array(z.number().min(1)),
+        shopDiscountCode: z.string().optional(),
+        platformDiscountCode: z.string().optional(),
       })
       .refine((data) => data.receiver || data.userAddressId, {
         message: 'Either receiver or userAddressId must be provided',
@@ -73,6 +75,8 @@ export type ResolvedCreateOrderItem = {
   shopId: number
   receiver: { name: string; phone: string; address: string }
   cartItemIds: number[]
+  shopDiscountCode?: string
+  platformDiscountCode?: string
 }
 export type CreateOrderBodyResType = z.infer<typeof CreateOrderBodyResSchema>
 export type CancelOrderResType = z.infer<typeof CancelOrderResSchema>

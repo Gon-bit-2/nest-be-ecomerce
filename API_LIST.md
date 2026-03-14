@@ -1113,7 +1113,9 @@ _No Body_
       "phone": "0123456789",
       "address": "123 St, City"
     },
-    "cartItemIds": [1, 2]
+    "cartItemIds": [1, 2],
+    "shopDiscountCode": "SHOP10",
+    "platformDiscountCode": "PLATFORM20"
   }
 ]
 ```
@@ -1125,10 +1127,45 @@ _No Body_
   {
     "shopId": 1,
     "userAddressId": 1,
-    "cartItemIds": [1, 2]
+    "cartItemIds": [1, 2],
+    "shopDiscountCode": "SHOP10"
   }
 ]
 ```
+
+**Các field voucher (optional):**
+
+| Field                  | Mô tả                              |
+| ---------------------- | ---------------------------------- |
+| `shopDiscountCode`     | Mã voucher của shop (scope `SHOP`) |
+| `platformDiscountCode` | Mã voucher sàn (scope `PLATFORM`)  |
+
+- Có thể truyền cả 2 code cùng lúc (1 Shop + 1 Platform)
+- Không bắt buộc — nếu không truyền thì đơn hàng không áp dụng voucher
+- Hệ thống tự động validate mã, tính giảm giá, và tạo `DiscountUsage` trong cùng transaction
+- Nếu mã không hợp lệ (hết hạn, hết lượt, không đủ điều kiện) → trả lỗi `400 Bad Request`
+
+**Response:**
+
+```json
+{
+  "paymentId": 123,
+  "orders": [
+    {
+      "id": 1,
+      "userId": 1,
+      "shopId": 1,
+      "status": "PENDING_PAYMENT",
+      "discountAmount": 30000,
+      "shippingFee": 0,
+      "receiver": { "name": "...", "phone": "...", "address": "..." },
+      "paymentId": 123
+    }
+  ]
+}
+```
+
+- `discountAmount`: Tổng số tiền đã được giảm giá (bao gồm cả shop + platform voucher). Mặc định `0` nếu không dùng voucher.
 
 ### Cancel Order
 
@@ -1139,6 +1176,15 @@ _No Body_
 - `Authorization`: `Bearer <accessToken>`
 
 _No Body_
+
+**Lưu ý:**
+
+- Chỉ hủy được đơn hàng ở trạng thái `PENDING_PAYMENT`
+- Khi hủy đơn, hệ thống tự động **hoàn voucher** cho user:
+  - Giảm `useCount` trên mỗi Discount đã áp dụng
+  - Reset `UserSavedDiscount.isUsed = false` (nếu user đã lưu voucher trước đó)
+  - Xóa `DiscountUsage` records của đơn hàng
+  - User có thể dùng lại voucher cho đơn hàng khác
 
 ### Update Order Status
 
@@ -1252,8 +1298,8 @@ _No Auth Headers_ (Public Endpoint — Secured by API Key header)
 - `page`: number (default 1)
 - `limit`: number (default 10)
 - `search`: string (optional)
-- `type`: "FIXED" | "PERCENTAGE" (optional)
-- `scope`: "GLOBAL" | "SHOP" (optional)
+- `type`: "PERCENTAGE" | "FIXED_AMOUNT" | "SHIPPING" (optional)
+- `scope`: "PLATFORM" | "SHOP" (optional)
 - `isActive`: boolean (optional)
 - `shopId`: number (optional)
 
@@ -1296,12 +1342,13 @@ _No Auth Headers_ (Public Endpoint — Secured by API Key header)
   "categoryIds": [1],
   "name": "Summer Sale",
   "value": 10,
-  "type": "PERCENTAGE", // FIXED, PERCENTAGE
-  "scope": "SHOP", // GLOBAL, SHOP
+  "maxDiscountValue": 50000,
+  "type": "PERCENTAGE",
+  "scope": "SHOP",
   "code": "SUMMER10",
-  "description": "10% off for summer",
+  "description": "10% off for summer, max 50K",
   "maxTotalUses": 100,
-  "applyTo": "ORDER", // ORDER, SPECIFIC_PRODUCT
+  "applyTo": "ALL",
   "maxUsesPerUser": 1,
   "minOrderValue": 100000,
   "isActive": true,
@@ -1309,6 +1356,35 @@ _No Auth Headers_ (Public Endpoint — Secured by API Key header)
   "endDate": "2023-11-30T23:59:59.000Z"
 }
 ```
+
+**Các loại discount (`type`):**
+
+| Type           | Mô tả                        | Ví dụ                                                                                                      |
+| -------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `PERCENTAGE`   | Giảm theo % giá trị đơn hàng | `value: 10` → giảm 10%, `maxDiscountValue: 50000` → tối đa 50K                                             |
+| `FIXED_AMOUNT` | Giảm số tiền cố định         | `value: 50000` → giảm 50K                                                                                  |
+| `SHIPPING`     | Giảm/miễn phí vận chuyển     | `value: 100` → miễn phí ship, `value: 50` → giảm 50% ship, `maxDiscountValue: 30000` → freeship tối đa 30K |
+
+**Các scope:**
+
+| Scope      | Mô tả                                                  |
+| ---------- | ------------------------------------------------------ |
+| `SHOP`     | Voucher của shop, chỉ áp dụng cho đơn hàng của shop đó |
+| `PLATFORM` | Voucher sàn, áp dụng cho toàn bộ đơn hàng              |
+
+**Các applyTo:**
+
+| ApplyTo    | Mô tả                                                                       |
+| ---------- | --------------------------------------------------------------------------- |
+| `ALL`      | Áp dụng cho toàn bộ sản phẩm trong đơn                                      |
+| `SPECIFIC` | Chỉ áp dụng cho sản phẩm/danh mục cụ thể (theo `productIds`, `categoryIds`) |
+
+**Lưu ý về `maxDiscountValue`:**
+
+- Dùng để giới hạn số tiền giảm tối đa cho voucher `PERCENTAGE` và `SHIPPING`
+- Ví dụ: "Giảm 50%, tối đa 100K" → `value: 50`, `maxDiscountValue: 100000`
+- Ví dụ: "Freeship tối đa 30K" → `type: SHIPPING`, `value: 100`, `maxDiscountValue: 30000`
+- Nếu `maxDiscountValue` = 0 hoặc null → không giới hạn
 
 ### Update Discount (Seller)
 
@@ -1333,6 +1409,25 @@ _No Auth Headers_ (Public Endpoint — Secured by API Key header)
 
 - `Authorization`: `Bearer <accessToken>`
 
+### Save Voucher (User)
+
+**POST** `/discount/:discountId/save`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+_No Body_
+
+**Mô tả:** User lưu voucher vào "Kho voucher" của mình để sử dụng sau. Voucher đã lưu có thể xem qua `GET /discount/my-vouchers`.
+
+**Lưu ý:**
+
+- Chỉ lưu được voucher đang active và chưa hết hạn
+- Gọi lại endpoint này nếu đã lưu rồi → trả về kết quả cũ (idempotent), không báo lỗi
+- Khi user dùng voucher đặt hàng → hệ thống tự động đánh dấu `isUsed = true`
+- Khi user hủy đơn → hệ thống tự động reset `isUsed = false`, user có thể dùng lại
+
 ### Preview Discount
 
 **POST** `/discount/preview`
@@ -1345,17 +1440,53 @@ _No Auth Headers_ (Public Endpoint — Secured by API Key header)
 {
   "code": "SUMMER10",
   "orderValue": 200000,
+  "shippingFee": 30000,
   "userId": 1,
   "shopId": 1,
   "items": [
     {
       "productId": 1,
+      "categoryId": 1,
       "price": 100000,
       "quantity": 2
     }
   ]
 }
 ```
+
+**Response (voucher giảm giá):**
+
+```json
+{
+  "isValid": true,
+  "discountAmount": 20000,
+  "shippingDiscount": 0,
+  "finalPrice": 180000,
+  "finalShippingFee": 30000,
+  "message": "Áp dụng mã thành công"
+}
+```
+
+**Response (voucher freeship):**
+
+```json
+{
+  "isValid": true,
+  "discountAmount": 0,
+  "shippingDiscount": 30000,
+  "finalPrice": 200000,
+  "finalShippingFee": 0,
+  "message": "Áp dụng mã freeship thành công"
+}
+```
+
+**Lưu ý:**
+
+- `shippingFee`: Phí vận chuyển của đơn hàng (bắt buộc khi preview voucher `SHIPPING`)
+- `discountAmount`: Số tiền giảm trên giá sản phẩm (= 0 nếu là voucher freeship)
+- `shippingDiscount`: Số tiền giảm trên phí ship (= 0 nếu không phải voucher freeship)
+- `finalPrice`: Giá sản phẩm sau khi giảm
+- `finalShippingFee`: Phí ship sau khi giảm
 
 ---
 

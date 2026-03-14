@@ -47,4 +47,7 @@ export class DiscountService {
   async preview(body: PreviewDiscountType) {
     return this.discountRepo.preview(body)
   }
+  async save({ discountId, userId }: { discountId: number; userId: number }) {
+    return this.discountRepo.save({ discountId, userId })
+  }
 }

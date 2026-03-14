@@ -395,7 +395,10 @@ export class DiscountRepo {
     })
   }
   async preview(body: PreviewDiscountType): Promise<PreviewDiscountResType> {
-    const { code, userId, items, orderValue } = body
+    const { code, userId, items, shippingFee = 0 } = body
+
+    // Tính tổng tiền từ items thay vì tin tưởng orderValue từ FE
+    const orderValue = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
     // 1. Lấy thông tin mã
     const discount = await this.findByCode(code)
@@ -423,7 +426,44 @@ export class DiscountRepo {
       throw new BadRequestException(`Đơn hàng tối thiểu phải từ ${discount.minOrderValue}`)
     }
 
-    // 6. Tính toán số tiền được giảm (Logic Scope)
+    // 6. Xử lý SHIPPING type riêng biệt — giảm phí ship, không giảm giá sản phẩm
+    const maxCap = discount.maxDiscountValue ?? 0
+
+    if (discount.type === 'SHIPPING') {
+      if (shippingFee <= 0) {
+        throw new BadRequestException('Đơn hàng không có phí vận chuyển để áp dụng mã freeship')
+      }
+
+      let shippingDiscount = 0
+      if (discount.value >= 100) {
+        // value >= 100 → miễn phí ship hoàn toàn
+        shippingDiscount = shippingFee
+      } else {
+        // value < 100 → giảm % phí ship (VD: value=50 → giảm 50% phí ship)
+        shippingDiscount = (shippingFee * discount.value) / 100
+      }
+
+      // Giới hạn tối đa nếu có maxDiscountValue (VD: "Freeship tối đa 30K")
+      if (maxCap > 0) {
+        shippingDiscount = Math.min(shippingDiscount, maxCap)
+      }
+
+      shippingDiscount = Math.round(Math.min(shippingDiscount, shippingFee)) // Không giảm quá phí ship
+
+      return {
+        isValid: true,
+        discountAmount: 0,
+        shippingDiscount,
+        finalPrice: orderValue,
+        finalShippingFee: shippingFee - shippingDiscount,
+        message: 'Áp dụng mã freeship thành công',
+        discountType: discount.type,
+        discountRawValue: discount.value,
+        maxDiscountValue: discount.maxDiscountValue,
+      }
+    }
+
+    // 7. Tính toán số tiền được giảm cho PERCENTAGE / FIXED_AMOUNT (Logic Scope)
     let applicableAmount = 0
 
     if (discount.applyTo === 'ALL') {
@@ -448,22 +488,31 @@ export class DiscountRepo {
       throw new BadRequestException('Mã không áp dụng cho sản phẩm nào trong giỏ hàng')
     }
 
-    // 7. Final Calc
+    // 8. Final Calc
     let discountAmount = 0
-    if (discount.type === 'FIXED_AMOUNT') {
+    if (discount.type === 'FIXED_AMOUNT' || discount.type === 'COIN_CASHBACK') {
       discountAmount = discount.value
     } else if (discount.type === 'PERCENTAGE') {
       discountAmount = (applicableAmount * discount.value) / 100
-      // TODO: Check maxDiscountValue nếu có (hiện tại schema chưa có trường này)
+      // Giới hạn số tiền giảm tối đa (VD: "Giảm 50%, tối đa 100K")
+      if (maxCap > 0) {
+        discountAmount = Math.min(discountAmount, maxCap)
+      }
     }
 
-    const finalDiscount = Math.min(discountAmount, orderValue) // Không giảm quá tiền đơn
+    const finalDiscount = Math.round(Math.min(discountAmount, orderValue)) // Không giảm quá tiền đơn
 
     return {
       isValid: true,
       discountAmount: finalDiscount,
+      shippingDiscount: 0,
       finalPrice: orderValue - finalDiscount,
+      finalShippingFee: shippingFee,
       message: 'Áp dụng mã thành công',
+      discountType: discount.type,
+      discountRawValue: discount.value,
+      maxDiscountValue: discount.maxDiscountValue,
+      applicableAmount,
     }
   }
 }

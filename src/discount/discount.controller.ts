@@ -67,6 +67,11 @@ export class DiscountController {
     return this.discountService.delete({ discountId: param.discountId, deletedById: userId })
   }
 
+  @Post(':discountId/save')
+  async save(@Param() param: GetDiscountParamsDTO, @ActiveUser('userId') userId: number) {
+    return await this.discountService.save({ discountId: param.discountId, userId })
+  }
+
   @Post('preview')
   @ZodSerializerDto(PreviewDiscountResBodyDTO)
   async preview(@Body() body: PreviewDiscountBodyDTO) {
