@@ -559,7 +559,7 @@ const order = await fetch('/order', {
 //       id: 1,
 //       discountAmount: 30000,  // Tổng tiền giảm từ voucher
 //       shippingFee: 0,
-//       status: 'PENDING_PAYMENT',
+//       status: 'UNPAID',
 //       ...
 //     }
 //   ]

@@ -1084,7 +1084,7 @@ _Note: Currently expects `cartItemId` via parameters but route definition may ne
 
 - `page`: number (default 1)
 - `limit`: number (default 10)
-- `status`: "PENDING_PAYMENT" | "PENDING_PICKUP" | "PENDING_DELIVERY" | "DELIVERED" | "RETURNED" | "CANCELLED" (Optional)
+- `status`: "UNPAID" | "READY_TO_SHIP" | "SHIPPED" | "COMPLETED" | "TO_RETURN" | "CANCELLED" (Optional)
 
 ### Get Order Detail
 
@@ -1155,7 +1155,7 @@ _No Body_
       "id": 1,
       "userId": 1,
       "shopId": 1,
-      "status": "PENDING_PAYMENT",
+      "status": "UNPAID",
       "discountAmount": 30000,
       "shippingFee": 0,
       "receiver": { "name": "...", "phone": "...", "address": "..." },
@@ -1179,7 +1179,7 @@ _No Body_
 
 **Lưu ý:**
 
-- Chỉ hủy được đơn hàng ở trạng thái `PENDING_PAYMENT`
+- Chỉ hủy được đơn hàng ở trạng thái `UNPAID`
 - Khi hủy đơn, hệ thống tự động **hoàn voucher** cho user:
   - Giảm `useCount` trên mỗi Discount đã áp dụng
   - Reset `UserSavedDiscount.isUsed = false` (nếu user đã lưu voucher trước đó)
@@ -1196,9 +1196,17 @@ _No Body_
 
 ```json
 {
-  "status": "DELIVERED" // DELIVERED, RETURNED
+  "status": "SHIPPED" // UNPAID, READY_TO_SHIP, SHIPPED, COMPLETED, TO_RETURN, CANCELLED
 }
 ```
+
+**Transition hợp lệ hiện tại:**
+
+- UNPAID -> READY_TO_SHIP hoặc CANCELLED
+- READY_TO_SHIP -> SHIPPED
+- SHIPPED -> COMPLETED hoặc TO_RETURN
+- COMPLETED -> TO_RETURN
+- TO_RETURN, CANCELLED là trạng thái cuối
 
 ---
 
@@ -1210,7 +1218,7 @@ _No Body_
 2. Frontend gọi `POST /order` → Backend tạo đơn hàng + Payment (PENDING) → Trả về `paymentId`
 3. Frontend gen QR Code từ `paymentId` + thông tin bank config → User chuyển khoản
 4. SePay phát hiện giao dịch → Gọi Webhook `POST /payment/receiver`
-5. Backend xác nhận thanh toán → Cập nhật Order sang `PENDING_PICKUP` → Emit WebSocket event `payment` tới user
+5. Backend xác nhận thanh toán → Cập nhật Order sang `READY_TO_SHIP` → Emit WebSocket event `payment` tới user
 6. Nếu không thanh toán trong 24h → Tự động hủy đơn, hoàn lại stock
 
 ### Get Payment Config
@@ -1262,7 +1270,7 @@ _No Auth Headers_ (Public Endpoint — Secured by API Key header)
 
 - Backend trích xuất `paymentId` từ `code` hoặc `content` bằng prefix `PM` (ví dụ `PM123` → paymentId = 123)
 - Kiểm tra `transferAmount` có bằng tổng tiền đơn hàng không
-- Nếu hợp lệ → cập nhật Payment `SUCCESS`, Orders `PENDING_PICKUP`, xóa job auto-cancel
+- Nếu hợp lệ → cập nhật Payment `SUCCESS`, Orders `READY_TO_SHIP`, xóa job auto-cancel
 - Gửi WebSocket event `payment` với `{ status: 'success' }` tới user
 
 ### WebSocket Payment Notification

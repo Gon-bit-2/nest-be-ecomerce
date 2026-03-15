@@ -285,7 +285,7 @@ export class OrderRepo {
           const order = await tx.order.create({
             data: {
               userId,
-              status: ORDER_STATUS.PENDING_PAYMENT,
+              status: ORDER_STATUS.UNPAID,
               shopId: item.shopId,
               receiver: item.receiver,
               createdById: userId,
@@ -428,14 +428,18 @@ export class OrderRepo {
       throw OrdetNotFoundException
     }
 
-    if (body.status === ORDER_STATUS.DELIVERED) {
-      if (order.status !== ORDER_STATUS.PENDING_DELIVERY) {
-        throw InvalidOrderStatusTransitionException
-      }
-    } else if (body.status === ORDER_STATUS.RETURNED) {
-      if (order.status !== ORDER_STATUS.DELIVERED) {
-        throw InvalidOrderStatusTransitionException
-      }
+    const allowedTransitions: Record<UpdateOrderStatusType['status'], UpdateOrderStatusType['status'][]> = {
+      [ORDER_STATUS.UNPAID]: [ORDER_STATUS.READY_TO_SHIP, ORDER_STATUS.CANCELLED],
+      [ORDER_STATUS.READY_TO_SHIP]: [ORDER_STATUS.SHIPPED],
+      [ORDER_STATUS.SHIPPED]: [ORDER_STATUS.COMPLETED, ORDER_STATUS.TO_RETURN],
+      [ORDER_STATUS.COMPLETED]: [ORDER_STATUS.TO_RETURN],
+      [ORDER_STATUS.TO_RETURN]: [],
+      [ORDER_STATUS.CANCELLED]: [],
+    }
+
+    const nextStatuses = allowedTransitions[order.status as UpdateOrderStatusType['status']] ?? []
+    if (!nextStatuses.includes(body.status)) {
+      throw InvalidOrderStatusTransitionException
     }
 
     return this.prismaService.order.update({
@@ -460,7 +464,7 @@ export class OrderRepo {
           discountUsages: true,
         },
       })
-      if (order.status !== ORDER_STATUS.PENDING_PAYMENT) {
+      if (order.status !== ORDER_STATUS.UNPAID) {
         throw CanNotCancelOrderException
       }
 

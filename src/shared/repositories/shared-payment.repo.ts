@@ -31,7 +31,7 @@ export class SharedPaymentRepository {
           id: {
             in: orders.map((order) => order.id),
           },
-          status: ORDER_STATUS.PENDING_PAYMENT,
+          status: ORDER_STATUS.UNPAID,
           deletedAt: null,
         },
         data: {
