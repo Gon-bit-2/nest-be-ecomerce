@@ -10,6 +10,12 @@ import {
   UpdateDiscountBodyType,
   UpdateDiscountResBodyType,
 } from '../model/discount.model'
+import {
+  assertDiscountEligibility,
+  assertDiscountScopeForPreview,
+  evaluateDiscountPolicy,
+  getOrderValue,
+} from '../policy/discount-policy.engine'
 import { PrismaService } from 'src/shared/service/prisma.service'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 
@@ -395,75 +401,52 @@ export class DiscountRepo {
     })
   }
   async preview(body: PreviewDiscountType): Promise<PreviewDiscountResType> {
-    const { code, userId, items, orderValue } = body
+    const { code, userId, shopId, items, shippingFee = 0 } = body
+    const policyItems = items.map((item) => ({
+      productId: item.productId,
+      categoryIds: item.categoryId ? [item.categoryId] : [],
+      price: item.price,
+      quantity: item.quantity,
+    }))
+
+    // Tính tổng tiền từ items thay vì tin tưởng orderValue từ FE
+    const orderValue = getOrderValue(policyItems)
 
     // 1. Lấy thông tin mã
     const discount = await this.findByCode(code)
     if (!discount) throw new BadRequestException('Mã không tồn tại hoặc không khả dụng')
 
-    // 2. Check ngày
-    const now = new Date()
-    if (now < discount.startDate || now > discount.endDate) {
-      throw new BadRequestException('Mã chưa bắt đầu hoặc đã hết hạn')
-    }
+    assertDiscountScopeForPreview({
+      discount,
+      shopId,
+    })
 
-    // 3. Check số lượng tổng
-    if (discount.maxTotalUses > 0 && discount.useCount >= discount.maxTotalUses) {
-      throw new BadRequestException('Mã đã hết lượt sử dụng')
-    }
-
-    // 4. Check user usage
+    // Check usage eligibility
     const userUsage = await this.countUsageByUser(discount.id, userId)
-    if (discount.maxUsesPerUser > 0 && userUsage >= discount.maxUsesPerUser) {
-      throw new BadRequestException('Bạn đã dùng hết lượt mã này')
-    }
 
-    // 5. Check Min Order
-    if (orderValue < discount.minOrderValue) {
-      throw new BadRequestException(`Đơn hàng tối thiểu phải từ ${discount.minOrderValue}`)
-    }
+    assertDiscountEligibility({
+      discount,
+      orderValue,
+      userUsage,
+    })
 
-    // 6. Tính toán số tiền được giảm (Logic Scope)
-    let applicableAmount = 0
-
-    if (discount.applyTo === 'ALL') {
-      applicableAmount = orderValue
-    } else {
-      // Lọc item hợp lệ
-      const validProductIds = discount.products.map((p) => p.productId)
-      const validCategoryIds = discount.categories.map((c) => c.categoryId)
-
-      for (const item of items) {
-        const isProductValid = validProductIds.includes(item.productId)
-        // Nếu FE không gửi categoryId thì coi như không match category (trừ khi BE tự lookup Product -> Category - việc này tốn query nên tạm thời FE gửi)
-        const isCategoryValid = item.categoryId && validCategoryIds.includes(item.categoryId)
-
-        if (isProductValid || isCategoryValid) {
-          applicableAmount += item.price * item.quantity
-        }
-      }
-    }
-
-    if (applicableAmount === 0) {
-      throw new BadRequestException('Mã không áp dụng cho sản phẩm nào trong giỏ hàng')
-    }
-
-    // 7. Final Calc
-    let discountAmount = 0
-    if (discount.type === 'FIXED_AMOUNT') {
-      discountAmount = discount.value
-    } else if (discount.type === 'PERCENTAGE') {
-      discountAmount = (applicableAmount * discount.value) / 100
-      // TODO: Check maxDiscountValue nếu có (hiện tại schema chưa có trường này)
-    }
-
-    const finalDiscount = Math.min(discountAmount, orderValue) // Không giảm quá tiền đơn
+    const evaluation = evaluateDiscountPolicy({
+      discount,
+      items: policyItems,
+      shippingFee,
+    })
 
     return {
       isValid: true,
-      discountAmount: finalDiscount,
-      finalPrice: orderValue - finalDiscount,
-      message: 'Áp dụng mã thành công',
+      discountAmount: evaluation.discountAmount,
+      shippingDiscount: evaluation.shippingDiscount,
+      finalPrice: orderValue - evaluation.discountAmount,
+      finalShippingFee: shippingFee - evaluation.shippingDiscount,
+      message: discount.type === 'SHIPPING' ? 'Áp dụng mã freeship thành công' : 'Áp dụng mã thành công',
+      discountType: discount.type,
+      discountRawValue: discount.value,
+      maxDiscountValue: discount.maxDiscountValue,
+      applicableAmount: evaluation.applicableAmount,
     }
   }
 }

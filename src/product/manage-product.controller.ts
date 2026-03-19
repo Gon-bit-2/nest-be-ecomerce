@@ -9,7 +9,6 @@ import {
   UpdateProductBodyDTO,
 } from './dto/product.dto'
 import { ZodSerializerDto } from 'nestjs-zod'
-import { isPublic } from 'src/shared/decorators/auth.decorator'
 import { ActiveUser } from 'src/shared/decorators/active-user.decorator'
 import { MessageResDTO } from 'src/shared/dtos/response.dto'
 import { ManageProductService } from './manage-product.service'
@@ -20,7 +19,6 @@ export class ManageProductController {
   constructor(private readonly manageProductService: ManageProductService) {}
 
   @Get()
-  @isPublic()
   @ZodSerializerDto(GetProductResDTO)
   async list(@Query() query: GetManageProductQueryDTO, @ActiveUser() user: AccessTokenPayload) {
     const products = await this.manageProductService.list({
@@ -32,7 +30,6 @@ export class ManageProductController {
   }
 
   @Get(':productId')
-  @isPublic()
   @ZodSerializerDto(GetProductDetailResDTO)
   async getDetail(@Param() params: GetProductParamsDTO, @ActiveUser() user: AccessTokenPayload) {
     const product = await this.manageProductService.getDetail({

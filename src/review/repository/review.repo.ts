@@ -65,8 +65,8 @@ export class ReviewRepo {
     if (!order) {
       throw new BadRequestException('Order not found')
     }
-    if (order.status !== ORDER_STATUS.DELIVERED) {
-      throw new BadRequestException('Order status must be delivered')
+    if (order.status !== ORDER_STATUS.COMPLETED) {
+      throw new BadRequestException('Order status must be completed')
     }
     return order
   }

@@ -115,7 +115,7 @@ export class ProductRepo {
           order: {
             where: {
               deletedAt: null,
-              status: 'DELIVERED',
+              status: 'COMPLETED',
             },
           },
         },
@@ -209,7 +209,7 @@ export class ProductRepo {
         order: {
           where: {
             deletedAt: null,
-            status: 'DELIVERED',
+            status: 'COMPLETED',
           },
         },
       },

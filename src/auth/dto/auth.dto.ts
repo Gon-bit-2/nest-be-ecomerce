@@ -12,6 +12,7 @@ import {
   RegisterResSchema,
   SendOTPBodySchema,
   TwoFactorSetupResSchema,
+  VerifyTwoFactorBodySchema,
   VerifyOTPBodySchema,
 } from 'src/auth/auth.model'
 //Serializer
@@ -29,3 +30,4 @@ export class GetAuthorizationUrlResDTO extends createZodDto(GetAuthorizationUrlR
 export class ForgotPasswordBodyDTO extends createZodDto(ForgotPasswordBodySchema) {}
 export class TwoFactorSetupResDTO extends createZodDto(TwoFactorSetupResSchema) {}
 export class DisableTwoFactorBodyDTO extends createZodDto(DisableTwoFactorBodySchema) {}
+export class VerifyTwoFactorBodyDTO extends createZodDto(VerifyTwoFactorBodySchema) {}

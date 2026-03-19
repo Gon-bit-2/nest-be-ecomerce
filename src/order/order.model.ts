@@ -1,5 +1,4 @@
 import { PaginationQuerySchema } from 'src/shared/model/request.model'
-import { ORDER_STATUS } from 'src/shared/constants/order.constant'
 import { OrderSchema, OrderStatusSchema, ProductSKUSnapshotSchema } from 'src/shared/model/shared-order.model'
 import z from 'zod'
 
@@ -34,6 +33,7 @@ export const CreateOrderBodySchema = z
     z
       .object({
         shopId: z.number(),
+        shippingFee: z.number().min(0).default(0),
         receiver: z
           .object({
             name: z.string(),
@@ -43,6 +43,8 @@ export const CreateOrderBodySchema = z
           .optional(),
         userAddressId: z.number().int().positive().optional(),
         cartItemIds: z.array(z.number().min(1)),
+        shopDiscountCode: z.string().optional(),
+        platformDiscountCode: z.string().optional(),
       })
       .refine((data) => data.receiver || data.userAddressId, {
         message: 'Either receiver or userAddressId must be provided',
@@ -61,7 +63,7 @@ export const GetOrderParamsSchema = z
   .strict()
 
 export const UpdateOrderStatusSchema = z.object({
-  status: z.enum([ORDER_STATUS.DELIVERED, ORDER_STATUS.RETURNED]),
+  status: OrderStatusSchema,
 })
 
 export type GetOrderListResType = z.infer<typeof GetOrderListResSchema>
@@ -71,8 +73,11 @@ export type GetOrderParamsType = z.infer<typeof GetOrderParamsSchema>
 export type CreateOrderBodyType = z.infer<typeof CreateOrderBodySchema>
 export type ResolvedCreateOrderItem = {
   shopId: number
+  shippingFee: number
   receiver: { name: string; phone: string; address: string }
   cartItemIds: number[]
+  shopDiscountCode?: string
+  platformDiscountCode?: string
 }
 export type CreateOrderBodyResType = z.infer<typeof CreateOrderBodyResSchema>
 export type CancelOrderResType = z.infer<typeof CancelOrderResSchema>

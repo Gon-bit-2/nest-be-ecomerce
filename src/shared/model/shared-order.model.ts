@@ -2,11 +2,11 @@ import { ORDER_STATUS } from 'src/shared/constants/order.constant'
 import z from 'zod'
 
 export const OrderStatusSchema = z.enum([
-  ORDER_STATUS.PENDING_PAYMENT,
-  ORDER_STATUS.PENDING_PICKUP,
-  ORDER_STATUS.PENDING_DELIVERY,
-  ORDER_STATUS.DELIVERED,
-  ORDER_STATUS.RETURNED,
+  ORDER_STATUS.UNPAID,
+  ORDER_STATUS.READY_TO_SHIP,
+  ORDER_STATUS.SHIPPED,
+  ORDER_STATUS.COMPLETED,
+  ORDER_STATUS.TO_RETURN,
   ORDER_STATUS.CANCELLED,
 ])
 
@@ -21,6 +21,8 @@ export const OrderSchema = z.object({
     phone: z.string(),
     address: z.string(),
   }),
+  shippingFee: z.number().default(0),
+  discountAmount: z.number().default(0),
   createdById: z.number().nullable(),
   updatedById: z.number().nullable(),
   deletedById: z.number().nullable(),

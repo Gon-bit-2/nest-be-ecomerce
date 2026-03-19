@@ -88,6 +88,13 @@ export const TwoFactorSetupResSchema = z.object({
   url: z.string().url(),
 })
 export type TwoFactorSetupResType = z.infer<typeof TwoFactorSetupResSchema>
+
+export const VerifyTwoFactorBodySchema = z
+  .object({
+    totpCode: z.string().length(6),
+  })
+  .strict()
+export type VerifyTwoFactorBodyType = z.infer<typeof VerifyTwoFactorBodySchema>
 // login
 export const LoginBodySchema = UserSchema.pick({
   email: true,

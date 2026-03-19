@@ -1,10 +1,12 @@
 import {
   BadRequestException,
   HttpException,
+  Inject,
   Injectable,
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common'
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager'
 import { addMilliseconds } from 'date-fns'
 import {
   DisableTwoFactorBodyType,
@@ -13,6 +15,7 @@ import {
   RefreshTokenBodyType,
   RegisterBodyType,
   SendOTPBodyType,
+  VerifyTwoFactorBodyType,
   VerifyOTPBodyType,
 } from 'src/auth/auth.model'
 import { AuthRepository } from 'src/auth/repository/auth.repository'
@@ -39,7 +42,13 @@ export class AuthService {
     private readonly authRepository: AuthRepository,
     private readonly shareUserRepository: ShareUserRepository,
     private readonly verificationCodeRepository: VerificationCodeRepository,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
+
+  private getTwoFactorPendingSecretCacheKey(userId: number) {
+    return `2fa:pending:${userId}`
+  }
+
   async register(body: RegisterBodyType) {
     try {
       const verificationCode = await this.verificationCodeRepository.findUniqueVerificationCode({
@@ -375,11 +384,68 @@ export class AuthService {
     }
     //2: tạo secret và uri
     const { secret, uri } = this.twoFactorAuthService.generateSecret(user.email)
-    //3: cập nhập secret và user trong db
-    await this.shareUserRepository.update({ id: user.id }, { totpSecret: secret, updatedById: userId })
+    //3: lưu tạm secret cho user đang setup để chỉ bật khi verify thành công
+    const cacheKey = this.getTwoFactorPendingSecretCacheKey(user.id)
+    await this.cacheManager.set(cacheKey, secret, 1000 * 60 * 10)
     //4: trả về secret và url
     return { secret, url: uri }
   }
+
+  async verifyAndEnableTwoFactorAuth(data: VerifyTwoFactorBodyType & { userId: number }) {
+    const { userId, totpCode } = data
+    const user = await this.shareUserRepository.findUnique({ id: userId })
+    if (!user) {
+      throw new UnprocessableEntityException([
+        {
+          message: 'User Không Tồn Tại',
+          path: 'id',
+        },
+      ])
+    }
+    if (user.totpSecret) {
+      throw new UnprocessableEntityException([
+        {
+          message: 'User Đã Bật 2FA',
+          path: 'id',
+        },
+      ])
+    }
+
+    const cacheKey = this.getTwoFactorPendingSecretCacheKey(user.id)
+    const pendingSecret = await this.cacheManager.get<string>(cacheKey)
+
+    if (!pendingSecret) {
+      throw new UnprocessableEntityException([
+        {
+          message: 'Vui lòng setup 2FA trước khi xác minh',
+          path: 'totpCode',
+        },
+      ])
+    }
+
+    const isValid = this.twoFactorAuthService.verifyToken({
+      email: user.email,
+      secret: pendingSecret,
+      token: totpCode,
+    })
+
+    if (!isValid) {
+      throw new UnprocessableEntityException([
+        {
+          message: 'Mã TOTP Không Hợp Lệ',
+          path: 'totpCode',
+        },
+      ])
+    }
+
+    await this.shareUserRepository.update({ id: user.id }, { totpSecret: pendingSecret, updatedById: userId })
+    await this.cacheManager.del(cacheKey)
+
+    return {
+      message: 'Bật 2FA Thành Công',
+    }
+  }
+
   async disableTwoFactorAuth(data: DisableTwoFactorBodyType & { userId: number }) {
     const { userId, code, totpCode } = data
     const user = await this.shareUserRepository.findUnique({ id: userId })
@@ -424,6 +490,7 @@ export class AuthService {
     }
     // 4:cập nhập secret thành null
     await this.shareUserRepository.update({ id: user.id }, { totpSecret: null, updatedById: userId })
+    await this.cacheManager.del(this.getTwoFactorPendingSecretCacheKey(user.id))
     return {
       message: 'Disable 2FA Thành Công',
     }

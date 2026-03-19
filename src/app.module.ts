@@ -40,6 +40,7 @@ import { LoggerModule } from 'nestjs-pino'
 import { MessageModule } from './message/message.module'
 import { AddressModule } from './address/address.module'
 import pino from 'pino'
+import pretty from 'pino-pretty'
 @Module({
   imports: [
     SharedModule,
@@ -89,7 +90,7 @@ import pino from 'pino'
       throttlers: [
         {
           ttl: 60000,
-          limit: 10,
+          limit: 100,
         },
       ],
     }),
@@ -123,11 +124,23 @@ import pino from 'pino'
             }
           },
         },
-        stream: pino.destination({
-          dest: path.resolve('logs/app.log'),
-          sync: false,
-          mkdir: true,
-        }),
+        stream: pino.multistream([
+          {
+            stream: pretty({
+              colorize: true,
+              translateTime: 'SYS:standard',
+              ignore: 'pid,hostname',
+              singleLine: false,
+            }),
+          },
+          {
+            stream: pino.destination({
+              dest: path.resolve('logs/app.log'),
+              sync: false,
+              mkdir: true,
+            }),
+          },
+        ]),
       },
     }),
     MessageModule,

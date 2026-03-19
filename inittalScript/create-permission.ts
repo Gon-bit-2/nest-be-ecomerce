@@ -8,6 +8,8 @@ import { NestFactory } from '@nestjs/core'
 import { AppModule } from 'src/app.module'
 import { PrismaService } from 'src/shared/service/prisma.service'
 import roleName, { HTTPMethod } from 'src/shared/constants/role.constant'
+import { createClient } from 'redis'
+import envConfig from 'src/shared/config'
 
 const SellerModule = [
   'AUTH',
@@ -23,8 +25,20 @@ const SellerModule = [
   'ROLE',
   'MESSAGE',
   'SHOP-VIDEO',
+  'ADDRESS',
 ]
-const ClientModule = ['AUTH', 'PROFILE', 'MEDIA', 'CART', 'ORDER', 'PAYMENT', 'REVIEW', 'DISCOUNT', 'MESSAGE']
+const ClientModule = [
+  'AUTH',
+  'PROFILE',
+  'MEDIA',
+  'CART',
+  'ORDER',
+  'PAYMENT',
+  'REVIEW',
+  'DISCOUNT',
+  'MESSAGE',
+  'ADDRESS',
+]
 
 const prisma = new PrismaService()
 async function bootstrap() {
@@ -121,6 +135,26 @@ async function bootstrap() {
     updateRole(sellerPermissionIds, roleName.Seller),
     updateRole(clientPermissionIds, roleName.Client),
   ])
+
+  // Clear cached role permissions in Redis
+  const redisClient = createClient({
+    username: envConfig.REDIS_USERNAME,
+    password: envConfig.REDIS_PASSWORD,
+    socket: {
+      host: envConfig.REDIS_HOST,
+      port: envConfig.REDIS_PORT,
+    },
+  })
+  await redisClient.connect()
+  const keys = await redisClient.keys('*roleId:*')
+  if (keys.length > 0) {
+    await redisClient.del(keys)
+    console.log('Cleared cached role permissions:', keys)
+  } else {
+    console.log('No cached role permissions to clear')
+  }
+  await redisClient.disconnect()
+
   process.exit(0)
 }
 const updateRole = async (permissionIds: { id: number }[], roleName: string) => {

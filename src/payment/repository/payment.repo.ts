@@ -103,7 +103,7 @@ export class PaymentRepo {
             },
           },
           data: {
-            status: ORDER_STATUS.PENDING_PICKUP,
+            status: ORDER_STATUS.READY_TO_SHIP,
           },
         }),
         this.paymentProducer.removeJob(payment.id),

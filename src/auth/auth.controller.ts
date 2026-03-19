@@ -11,6 +11,7 @@ import {
   RegisterResDTO,
   SendOPTBodyDTO,
   TwoFactorSetupResDTO,
+  VerifyTwoFactorBodyDTO,
   VerifyOTPBodyDTO,
 } from 'src/auth/dto/auth.dto'
 import { ZodSerializerDto } from 'nestjs-zod'
@@ -109,13 +110,18 @@ export class AuthController {
     return this.authService.forgotPassword(body)
   }
   @Post('2fa/setup')
-  @isPublic()
   @ZodSerializerDto(TwoFactorSetupResDTO)
   twoFactorAuth(@Body() _: EmptyBodyDTO, @ActiveUser('userId') userid: number) {
     return this.authService.twoFactorAuth(userid)
   }
+
+  @Post('2fa/verify')
+  @ZodSerializerDto(MessageResDTO)
+  verifyTwoFactorAuth(@Body() body: VerifyTwoFactorBodyDTO, @ActiveUser('userId') userId: number) {
+    return this.authService.verifyAndEnableTwoFactorAuth({ userId, totpCode: body.totpCode })
+  }
+
   @Post('2fa/disable')
-  @isPublic()
   @ZodSerializerDto(MessageResDTO)
   disableTwoFactorAuth(@Body() body: DisableTwoFactorBodyDTO, @ActiveUser('userId') userId: number) {
     return this.authService.disableTwoFactorAuth({ ...body, userId })

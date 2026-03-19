@@ -477,6 +477,8 @@ model Order {
 
   ///[Receiver]
   receiver       Json
+  shippingFee    Float           @default(0)
+  discountAmount Float           @default(0)
   shopId         Int
   shop           User            @relation("Shop", fields: [shopId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   paymentId      Int
@@ -498,21 +500,22 @@ model Order {
 }
 
 model Discount {
-  id             Int             @id @default(autoincrement())
-  name           String          @db.VarChar(500)
-  value          Float
-  type           DiscountType
-  scope          DiscountScope   @default(SHOP)
-  code           String          @unique @db.VarChar(255)
-  description    String          @db.Text
-  maxTotalUses   Int             @default(0)
-  applyTo        DiscountApplyTo
-  maxUsesPerUser Int
-  useCount       Int             @default(0)
-  minOrderValue  Float
-  isActive       Boolean         @default(true)
-  startDate      DateTime
-  endDate        DateTime
+  id               Int             @id @default(autoincrement())
+  name             String          @db.VarChar(500)
+  value            Float
+  maxDiscountValue Float?          @default(0)
+  type             DiscountType
+  scope            DiscountScope   @default(SHOP)
+  code             String          @unique @db.VarChar(255)
+  description      String          @db.Text
+  maxTotalUses     Int             @default(0)
+  applyTo          DiscountApplyTo
+  maxUsesPerUser   Int
+  useCount         Int             @default(0)
+  minOrderValue    Float
+  isActive         Boolean         @default(true)
+  startDate        DateTime
+  endDate          DateTime
 
   products     DiscountsOnProducts[]
   categories   DiscountsOnCategories[]
@@ -768,11 +771,11 @@ model Message {
 }
 
 enum OrderStatus {
-  PENDING_PAYMENT
-  PENDING_PICKUP
-  PENDING_DELIVERY
-  DELIVERED
-  RETURNED
+  UNPAID
+  READY_TO_SHIP
+  SHIPPED
+  COMPLETED
+  TO_RETURN
   CANCELLED
 }
 

@@ -9,6 +9,7 @@ export const DiscountSchema = z.object({
   userId: z.number().nullish(),
   name: z.string().min(1, 'Name is required'),
   value: z.number().min(1, 'Value is required'),
+  maxDiscountValue: z.number().default(0).nullish(),
   type: z.enum(DISCOUNT_TYPE),
   scope: z.enum(DISCOUNT_SCOPE),
   code: z.string().min(1, 'Code is required'),
@@ -35,6 +36,7 @@ export const CreateDiscountSchema = DiscountSchema.pick({
   categoryIds: true,
   name: true,
   value: true,
+  maxDiscountValue: true,
   type: true,
   scope: true,
   code: true,
@@ -68,6 +70,7 @@ export const GetDiscountListResSchema = z.object({
       shopId: true,
       name: true,
       value: true,
+      maxDiscountValue: true,
       type: true,
       scope: true,
       code: true,
@@ -103,6 +106,7 @@ export const GetDiscountParamsSchema = z
 export const ApplyDiscountSchema = z.object({
   code: z.string(),
   orderValue: z.number(),
+  shippingFee: z.number().default(0),
   userId: z.number(),
   shopId: z.number().optional(), // Để check xem mã shop này có hợp lệ với đơn hàng ko
   items: z.array(
@@ -119,8 +123,14 @@ export const PreviewDiscountSchema = ApplyDiscountSchema
 export const PreviewDiscountResSchema = z.object({
   isValid: z.boolean(),
   discountAmount: z.number(),
+  shippingDiscount: z.number().default(0),
   finalPrice: z.number(),
+  finalShippingFee: z.number().default(0),
   message: z.string().optional(),
+  discountType: z.enum(DISCOUNT_TYPE).optional(),
+  discountRawValue: z.number().optional(),
+  maxDiscountValue: z.number().nullish(),
+  applicableAmount: z.number().optional(),
 })
 
 export type DiscountType = z.infer<typeof DiscountSchema>
