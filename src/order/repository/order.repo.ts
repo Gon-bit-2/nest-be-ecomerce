@@ -21,6 +21,12 @@ import { ORDER_STATUS } from 'src/shared/constants/order.constant'
 import { PAYMENT_STATUS } from 'src/shared/constants/payment.constant'
 import { OrderProducer } from '../queue/order.producer'
 import { VerionConflictException } from 'src/shared/error/error'
+import {
+  assertDiscountEligibility,
+  assertDiscountScopeForApply,
+  evaluateDiscountPolicy,
+  getOrderValue,
+} from 'src/discount/policy/discount-policy.engine'
 
 @Injectable()
 export class OrderRepo {
@@ -39,12 +45,14 @@ export class OrderRepo {
       code: string
       userId: number
       orderId: number
+      shopId: number
+      expectedScope: 'SHOP' | 'PLATFORM'
       items: { productId: number; categoryIds: number[]; price: number; quantity: number }[]
       shippingFee: number
     },
   ): Promise<{ discountAmount: number; shippingDiscount: number }> {
-    const { code, userId, orderId, items, shippingFee } = params
-    const orderValue = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    const { code, userId, orderId, shopId, expectedScope, items, shippingFee } = params
+    const orderValue = getOrderValue(items)
 
     // 1. Find discount by code
     const discount = await tx.discount.findUnique({
@@ -53,71 +61,31 @@ export class OrderRepo {
     })
     if (!discount) throw new BadRequestException(`Mã "${code}" không tồn tại hoặc không khả dụng`)
 
-    // 2. Check dates
-    const now = new Date()
-    if (now < discount.startDate || now > discount.endDate) {
-      throw new BadRequestException(`Mã "${code}" chưa bắt đầu hoặc đã hết hạn`)
-    }
+    assertDiscountScopeForApply({
+      discount,
+      expectedScope,
+      shopId,
+      code,
+    })
 
-    // 3. Check total usage
-    if (discount.maxTotalUses > 0 && discount.useCount >= discount.maxTotalUses) {
-      throw new BadRequestException(`Mã "${code}" đã hết lượt sử dụng`)
-    }
-
-    // 4. Check user usage
+    // Check usage eligibility
     const userUsage = await tx.discountUsage.count({ where: { discountId: discount.id, userId } })
-    if (discount.maxUsesPerUser > 0 && userUsage >= discount.maxUsesPerUser) {
-      throw new BadRequestException(`Bạn đã dùng hết lượt mã "${code}"`)
-    }
+    assertDiscountEligibility({
+      discount,
+      orderValue,
+      userUsage,
+      code,
+    })
 
-    // 5. Check min order value
-    if (orderValue < discount.minOrderValue) {
-      throw new BadRequestException(`Đơn hàng tối thiểu phải từ ${discount.minOrderValue} để dùng mã "${code}"`)
-    }
+    const evaluation = evaluateDiscountPolicy({
+      discount,
+      items,
+      shippingFee,
+      code,
+    })
 
-    const maxCap = discount.maxDiscountValue ?? 0
-    let discountAmount = 0
-    let shippingDiscount = 0
-
-    // 6. SHIPPING type
-    if (discount.type === 'SHIPPING') {
-      if (shippingFee <= 0) {
-        throw new BadRequestException('Đơn hàng không có phí vận chuyển để áp dụng mã freeship')
-      }
-      if (discount.value >= 100) {
-        shippingDiscount = shippingFee
-      } else {
-        shippingDiscount = (shippingFee * discount.value) / 100
-      }
-      if (maxCap > 0) shippingDiscount = Math.min(shippingDiscount, maxCap)
-      shippingDiscount = Math.round(Math.min(shippingDiscount, shippingFee))
-    } else {
-      // 7. PERCENTAGE / FIXED_AMOUNT / COIN_CASHBACK
-      let applicableAmount = 0
-      if (discount.applyTo === 'ALL') {
-        applicableAmount = orderValue
-      } else {
-        const validProductIds = discount.products.map((p) => p.productId)
-        const validCategoryIds = discount.categories.map((c) => c.categoryId)
-        for (const item of items) {
-          const isProductValid = validProductIds.includes(item.productId)
-          const isCategoryValid = item.categoryIds.some((cid) => validCategoryIds.includes(cid))
-          if (isProductValid || isCategoryValid) {
-            applicableAmount += item.price * item.quantity
-          }
-        }
-      }
-      if (applicableAmount === 0) {
-        throw new BadRequestException(`Mã "${code}" không áp dụng cho sản phẩm nào trong đơn hàng`)
-      }
-      if (discount.type === 'FIXED_AMOUNT' || discount.type === 'COIN_CASHBACK') {
-        discountAmount = discount.value
-      } else if (discount.type === 'PERCENTAGE') {
-        discountAmount = (applicableAmount * discount.value) / 100
-        if (maxCap > 0) discountAmount = Math.min(discountAmount, maxCap)
-      }
-      discountAmount = Math.round(Math.min(discountAmount, orderValue))
-    }
+    const discountAmount = evaluation.discountAmount
+    const shippingDiscount = evaluation.shippingDiscount
 
     const finalDiscountAmount = discountAmount + shippingDiscount
 
@@ -131,11 +99,18 @@ export class OrderRepo {
       },
     })
 
-    // 9. Increment useCount
-    await tx.discount.update({
-      where: { id: discount.id },
+    // 9. Increment useCount with a compare-and-swap style guard to avoid oversubscribe on concurrency.
+    const updateUseCountResult = await tx.discount.updateMany({
+      where: {
+        id: discount.id,
+        ...(discount.maxTotalUses > 0 ? { useCount: { lt: discount.maxTotalUses } } : {}),
+      },
       data: { useCount: { increment: 1 } },
     })
+
+    if (updateUseCountResult.count === 0) {
+      throw new BadRequestException(`Mã "${code}" đã hết lượt sử dụng`)
+    }
 
     // 10. Mark UserSavedDiscount as used (if user saved this voucher)
     await tx.userSavedDiscount
@@ -288,6 +263,7 @@ export class OrderRepo {
               status: ORDER_STATUS.UNPAID,
               shopId: item.shopId,
               receiver: item.receiver,
+              shippingFee: item.shippingFee ?? 0,
               createdById: userId,
               paymentId: payment.id,
               items: {
@@ -325,16 +301,20 @@ export class OrderRepo {
 
           // Apply discounts after order is created (need orderId for DiscountUsage)
           let totalDiscountAmount = 0
+          let remainingShippingFee = item.shippingFee ?? 0
 
           if (item.shopDiscountCode) {
             const result = await this.validateAndApplyDiscount(tx, {
               code: item.shopDiscountCode,
               userId,
               orderId: order.id,
+              shopId: item.shopId,
+              expectedScope: 'SHOP',
               items: discountItems,
-              shippingFee: 0,
+              shippingFee: remainingShippingFee,
             })
             totalDiscountAmount += result.discountAmount + result.shippingDiscount
+            remainingShippingFee = Math.max(0, remainingShippingFee - result.shippingDiscount)
           }
 
           if (item.platformDiscountCode) {
@@ -342,10 +322,13 @@ export class OrderRepo {
               code: item.platformDiscountCode,
               userId,
               orderId: order.id,
+              shopId: item.shopId,
+              expectedScope: 'PLATFORM',
               items: discountItems,
-              shippingFee: 0,
+              shippingFee: remainingShippingFee,
             })
             totalDiscountAmount += result.discountAmount + result.shippingDiscount
+            remainingShippingFee = Math.max(0, remainingShippingFee - result.shippingDiscount)
           }
 
           // Update discountAmount on order if any discount was applied

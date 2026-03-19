@@ -333,14 +333,21 @@ Khi tạo đơn hàng (`POST /order`), bạn có thể:
 
 1. **Truyền `receiver` trực tiếp** — phù hợp khi user nhập tay:
    ```json
-   { "shopId": 1, "receiver": { "name": "...", "phone": "...", "address": "..." }, "cartItemIds": [1] }
+   {
+     "shopId": 1,
+     "shippingFee": 30000,
+     "receiver": { "name": "...", "phone": "...", "address": "..." },
+     "cartItemIds": [1]
+   }
    ```
 2. **Truyền `userAddressId`** — sử dụng địa chỉ đã lưu:
    ```json
-   { "shopId": 1, "userAddressId": 1, "cartItemIds": [1] }
+   { "shopId": 1, "shippingFee": 30000, "userAddressId": 1, "cartItemIds": [1] }
    ```
 
 _Chỉ cần truyền một trong hai (`receiver` hoặc `userAddressId`). Có thể kèm `shopDiscountCode` / `platformDiscountCode` để áp dụng voucher (xem mục 14)._
+
+_`shippingFee` có thể bỏ qua (backend mặc định `0`), nhưng nên truyền giá trị thực tế để voucher freeship (`SHIPPING`) tính chính xác._
 
 ## 12. Tìm Kiếm Sản Phẩm
 
@@ -468,11 +475,12 @@ Hệ thống hỗ trợ nhiều loại voucher tương tự Shopee/Tiki, bao g�
 
 ### a. Các Loại Voucher
 
-| Type           | Mô tả                | Cách tính                                                                              |
-| -------------- | -------------------- | -------------------------------------------------------------------------------------- |
-| `PERCENTAGE`   | Giảm % giá trị đơn   | `discountAmount = orderValue * value / 100`, tối đa `maxDiscountValue`                 |
-| `FIXED_AMOUNT` | Giảm số tiền cố định | `discountAmount = value`                                                               |
-| `SHIPPING`     | Giảm/miễn phí ship   | `value >= 100` → miễn phí ship, `value < 100` → giảm % ship, tối đa `maxDiscountValue` |
+| Type            | Mô tả                | Cách tính                                                                              |
+| --------------- | -------------------- | -------------------------------------------------------------------------------------- |
+| `PERCENTAGE`    | Giảm % giá trị đơn   | `discountAmount = orderValue * value / 100`, tối đa `maxDiscountValue`                 |
+| `FIXED_AMOUNT`  | Giảm số tiền cố định | `discountAmount = value`                                                               |
+| `COIN_CASHBACK` | Giảm số tiền cố định | `discountAmount = value` (được xử lý như giảm tiền trực tiếp trên đơn)                 |
+| `SHIPPING`      | Giảm/miễn phí ship   | `value >= 100` → miễn phí ship, `value < 100` → giảm % ship, tối đa `maxDiscountValue` |
 
 ### b. Xếp Chồng Voucher (Stacking)
 
@@ -532,6 +540,8 @@ const result = await fetch('/discount/preview', {
 // }
 ```
 
+_Lưu ý: `orderValue` hiện vẫn là field bắt buộc theo schema request, nhưng backend sẽ tự tính lại từ `items` để tránh sai lệch._
+
 ### e. Áp Dụng Voucher Khi Đặt Hàng
 
 Truyền mã voucher vào `POST /order` khi tạo đơn hàng:
@@ -543,6 +553,7 @@ const order = await fetch('/order', {
   body: JSON.stringify([
     {
       shopId: 1,
+      shippingFee: 30000,
       userAddressId: 1,
       cartItemIds: [1, 2],
       shopDiscountCode: 'SHOP10', // Optional — mã voucher shop
@@ -570,6 +581,7 @@ const order = await fetch('/order', {
 
 - `shopDiscountCode` và `platformDiscountCode` đều **optional**
 - Có thể truyền cả 2 code cùng lúc (1 Shop + 1 Platform)
+- `shopDiscountCode` phải là voucher scope `SHOP` của đúng `shopId`; `platformDiscountCode` phải là voucher scope `PLATFORM`
 - Nếu mã không hợp lệ → API trả lỗi `400 Bad Request` kèm message mô tả lý do
 - Backend tự validate (kiểm tra hạn, lượt dùng, giá trị tối thiểu, sản phẩm áp dụng) trong cùng transaction
 - Khi thành công: tạo `DiscountUsage`, tăng `useCount`, đánh dấu `isUsed = true` cho voucher đã lưu

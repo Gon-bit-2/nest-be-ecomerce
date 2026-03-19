@@ -33,6 +33,7 @@ export const CreateOrderBodySchema = z
     z
       .object({
         shopId: z.number(),
+        shippingFee: z.number().min(0).default(0),
         receiver: z
           .object({
             name: z.string(),
@@ -72,6 +73,7 @@ export type GetOrderParamsType = z.infer<typeof GetOrderParamsSchema>
 export type CreateOrderBodyType = z.infer<typeof CreateOrderBodySchema>
 export type ResolvedCreateOrderItem = {
   shopId: number
+  shippingFee: number
   receiver: { name: string; phone: string; address: string }
   cartItemIds: number[]
   shopDiscountCode?: string

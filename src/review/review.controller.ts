@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common'
+import { Body, Controller, Get, Param, Post, Put, Query, ParseIntPipe } from '@nestjs/common'
 import { ReviewService } from './review.service'
 import { PaginationQueryDTO } from 'src/shared/dtos/request.dto'
 import {
@@ -18,7 +18,7 @@ export class ReviewController {
   @isPublic()
   @Get('/product/:productId')
   @ZodSerializerDto(GetReviewsDTO)
-  async list(@Param('productId') productId: number, @Query() pagination: PaginationQueryDTO) {
+  async list(@Param('productId', ParseIntPipe) productId: number, @Query() pagination: PaginationQueryDTO) {
     return await this.reviewService.list(productId, pagination)
   }
 

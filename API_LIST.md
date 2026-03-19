@@ -139,7 +139,29 @@ _No Auth Headers_
 }
 ```
 
-**Note:** The `secret` is only returned once during setup. Store it securely. Use the `url` to generate QR code for authenticator apps.
+**Note:** Setup chỉ tạo secret tạm thời. 2FA chỉ được bật sau khi gọi endpoint verify bên dưới với mã TOTP hợp lệ.
+
+### Verify 2FA
+
+**POST** `/auth/2fa/verify`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+{
+  "totpCode": "123456"
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "Bật 2FA Thành Công"
+}
+```
 
 ### Disable 2FA
 
@@ -1108,6 +1130,7 @@ _No Body_
 [
   {
     "shopId": 1,
+    "shippingFee": 30000,
     "receiver": {
       "name": "John Doe",
       "phone": "0123456789",
@@ -1126,6 +1149,7 @@ _No Body_
 [
   {
     "shopId": 1,
+    "shippingFee": 30000,
     "userAddressId": 1,
     "cartItemIds": [1, 2],
     "shopDiscountCode": "SHOP10"
@@ -1137,12 +1161,15 @@ _No Body_
 
 | Field                  | Mô tả                              |
 | ---------------------- | ---------------------------------- |
+| `shippingFee`          | Phí vận chuyển của đơn theo shop   |
 | `shopDiscountCode`     | Mã voucher của shop (scope `SHOP`) |
 | `platformDiscountCode` | Mã voucher sàn (scope `PLATFORM`)  |
 
 - Có thể truyền cả 2 code cùng lúc (1 Shop + 1 Platform)
 - Không bắt buộc — nếu không truyền thì đơn hàng không áp dụng voucher
+- `shippingFee` có thể bỏ qua, backend sẽ dùng mặc định `0`; nên truyền giá trị thực tế để voucher `SHIPPING` tính chính xác
 - Hệ thống tự động validate mã, tính giảm giá, và tạo `DiscountUsage` trong cùng transaction
+- `shopDiscountCode` phải là voucher scope `SHOP` của đúng `shopId`; `platformDiscountCode` phải là voucher scope `PLATFORM`
 - Nếu mã không hợp lệ (hết hạn, hết lượt, không đủ điều kiện) → trả lỗi `400 Bad Request`
 
 **Response:**
@@ -1306,7 +1333,7 @@ _No Auth Headers_ (Public Endpoint — Secured by API Key header)
 - `page`: number (default 1)
 - `limit`: number (default 10)
 - `search`: string (optional)
-- `type`: "PERCENTAGE" | "FIXED_AMOUNT" | "SHIPPING" (optional)
+- `type`: "PERCENTAGE" | "FIXED_AMOUNT" | "SHIPPING" | "COIN_CASHBACK" (optional)
 - `scope`: "PLATFORM" | "SHOP" (optional)
 - `isActive`: boolean (optional)
 - `shopId`: number (optional)
@@ -1367,11 +1394,12 @@ _No Auth Headers_ (Public Endpoint — Secured by API Key header)
 
 **Các loại discount (`type`):**
 
-| Type           | Mô tả                        | Ví dụ                                                                                                      |
-| -------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `PERCENTAGE`   | Giảm theo % giá trị đơn hàng | `value: 10` → giảm 10%, `maxDiscountValue: 50000` → tối đa 50K                                             |
-| `FIXED_AMOUNT` | Giảm số tiền cố định         | `value: 50000` → giảm 50K                                                                                  |
-| `SHIPPING`     | Giảm/miễn phí vận chuyển     | `value: 100` → miễn phí ship, `value: 50` → giảm 50% ship, `maxDiscountValue: 30000` → freeship tối đa 30K |
+| Type            | Mô tả                        | Ví dụ                                                                                                      |
+| --------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `PERCENTAGE`    | Giảm theo % giá trị đơn hàng | `value: 10` → giảm 10%, `maxDiscountValue: 50000` → tối đa 50K                                             |
+| `FIXED_AMOUNT`  | Giảm số tiền cố định         | `value: 50000` → giảm 50K                                                                                  |
+| `COIN_CASHBACK` | Giảm số tiền cố định dạng xu | `value: 20000` → trừ 20K vào tổng giảm của đơn                                                             |
+| `SHIPPING`      | Giảm/miễn phí vận chuyển     | `value: 100` → miễn phí ship, `value: 50` → giảm 50% ship, `maxDiscountValue: 30000` → freeship tối đa 30K |
 
 **Các scope:**
 
@@ -1490,6 +1518,7 @@ _No Body_
 
 **Lưu ý:**
 
+- `orderValue` là field bắt buộc theo request schema, nhưng backend sẽ tính lại từ `items` để đảm bảo an toàn
 - `shippingFee`: Phí vận chuyển của đơn hàng (bắt buộc khi preview voucher `SHIPPING`)
 - `discountAmount`: Số tiền giảm trên giá sản phẩm (= 0 nếu là voucher freeship)
 - `shippingDiscount`: Số tiền giảm trên phí ship (= 0 nếu không phải voucher freeship)
