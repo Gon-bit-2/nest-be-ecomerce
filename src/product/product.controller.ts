@@ -37,4 +37,11 @@ export class ProductController {
     const product = await this.productService.getDetail({ productId: params.productId })
     return product
   }
+
+  @Get(':productId/variants')
+  @isPublic()
+  async getVariants(@Param() params: GetProductParamsDTO) {
+    const variants = await this.productService.getVariants({ productId: params.productId })
+    return variants
+  }
 }

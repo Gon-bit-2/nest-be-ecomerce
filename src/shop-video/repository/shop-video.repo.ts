@@ -31,7 +31,7 @@ export class ShopVideoRepo {
           select: {
             id: true,
             name: true,
-            avatar: true,
+            user: { select: { avatar: true } },
           },
         },
       },
@@ -59,14 +59,23 @@ export class ShopVideoRepo {
         ],
         include: {
           products: {
-            include: { product: true },
+            include: {
+              product: {
+                include: {
+                  skus: {
+                    select: { id: true },
+                    where: { deletedAt: null },
+                  },
+                },
+              },
+            },
             orderBy: { displayOrder: 'asc' },
           },
           shop: {
             select: {
               id: true,
               name: true,
-              avatar: true,
+              user: { select: { avatar: true } },
             },
           },
         },
@@ -88,14 +97,23 @@ export class ShopVideoRepo {
       where: { id, deletedAt: null },
       include: {
         products: {
-          include: { product: true },
+          include: {
+            product: {
+              include: {
+                skus: {
+                  select: { id: true },
+                  where: { deletedAt: null },
+                },
+              },
+            },
+          },
           orderBy: { displayOrder: 'asc' },
         },
         shop: {
           select: {
             id: true,
             name: true,
-            avatar: true,
+            user: { select: { avatar: true } },
           },
         },
       },

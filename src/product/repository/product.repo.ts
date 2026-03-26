@@ -237,6 +237,15 @@ export class ProductRepo {
     return product
   }
 
+  async getVariants(productId: number) {
+    return this.prismaService.sKU.findMany({
+      where: {
+        productId,
+        deletedAt: null,
+      },
+    })
+  }
+
   async getDetail({
     productId,
     languageId,

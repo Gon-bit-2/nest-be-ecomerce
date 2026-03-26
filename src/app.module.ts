@@ -39,6 +39,7 @@ import { ShopVideoModule } from './shop-video/shop-video.module'
 import { LoggerModule } from 'nestjs-pino'
 import { MessageModule } from './message/message.module'
 import { AddressModule } from './address/address.module'
+import { ShopModule } from './shop/shop.module';
 import pino from 'pino'
 import pretty from 'pino-pretty'
 @Module({
@@ -144,6 +145,7 @@ import pretty from 'pino-pretty'
       },
     }),
     MessageModule,
+    ShopModule,
   ],
   controllers: [AppController],
   providers: [

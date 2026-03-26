@@ -1,0 +1,12 @@
+--- src/shop-video/shop-video.service.ts
++++ src/shop-video/shop-video.service.ts
+@@ -41,6 +41,6 @@
+-    result.data = result.data.map((video) => {
++    result.data = result.data.map((video: any) => {
+       return {
+@@ -70,6 +70,6 @@
+-    return {
++    return {
+       ...video,
+-      products: video.products.map((p: any) => {
++      products: (video as any).products.map((p: any) => {
