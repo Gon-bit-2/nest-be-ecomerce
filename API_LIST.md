@@ -919,6 +919,17 @@ _No Body_
 _No Auth Headers_
 _No Body_
 
+### Get Product Variants
+
+**GET** `/product/:productId/variants`
+
+_No Auth Headers_
+_No Body_
+
+**Response:**
+
+Trả về danh sách các phiên bản (SKUs / phân loại như Màu sắc, Kích thước) của sản phẩm. Được sử dụng chủ yếu trên Shop Video Feed khi người dùng bấm "Chọn loại".
+
 ---
 
 ## Manage Product Module (Admin/Seller)
@@ -1589,11 +1600,17 @@ _No Auth Headers_ (Public)
 - `limit`: number (default 10)
 - `shopId`: number (optional)
 
+**Response Note:**
+Dữ liệu trả về ở mảng `products` bên trong mỗi video sẽ bao gồm cờ `has_variants: boolean`. Dựa vào cờ này FE quyết định nút bấm là "Thêm vào giỏ" hay "Chọn loại". Mảng `skus` đã được ẩn đi để tối ưu băng thông.
+
 ### Get Shop Video Detail
 
 **GET** `/shop-video/:id`
 
 _No Auth Headers_ (Public, but optimal if authenticated — returns whether current user has liked the video)
+
+**Response Note:**
+Tương tự danh sách, dữ liệu trả về ở mảng `products` bên trong video sẽ bao gồm cờ `has_variants: boolean`.
 
 ### Create Shop Video
 

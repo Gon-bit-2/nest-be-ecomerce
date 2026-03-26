@@ -37,7 +37,24 @@ export class ShopVideoService {
   }
 
   async list(query: ShopVideoQueryType) {
-    return this.shopVideoRepo.list(query)
+    const result = await this.shopVideoRepo.list(query)
+    result.data = result.data.map((video: any) => {
+      return {
+        ...video,
+        products: video.products.map((p: any) => {
+          const { skus, ...productData } = p.product
+          const has_variants = skus && skus.length > 1
+          return {
+            ...p,
+            product: {
+              ...productData,
+              has_variants,
+            },
+          }
+        }),
+      }
+    }) as any
+    return result
   }
 
   async getDetail(id: number, userId?: number) {
@@ -51,6 +68,17 @@ export class ShopVideoService {
 
     return {
       ...video,
+      products: (video as any).products.map((p: any) => {
+        const { skus, ...productData } = p.product
+        const has_variants = skus && skus.length > 1
+        return {
+          ...p,
+          product: {
+            ...productData,
+            has_variants,
+          },
+        }
+      }),
       isLiked,
     }
   }

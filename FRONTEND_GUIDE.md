@@ -304,6 +304,9 @@ const response = await fetch('/shop-video', {
 
 - Gọi `GET /shop-video?page=1&limit=10` (có thể lọc theo `shopId`).
 - Hiển thị UI theo dạng cuộn trang (swiping up/down) hoặc carousel dọc. Dữ liệu trả về sẽ bao gồm URL video (`videoUrl`) và các thông số tương tác (like, cmt).
+- **Lưu ý về Sản phẩm đính kèm:** Mảng `products` trả về chỉ cung cấp thông tin tinh gọn, kèm theo cờ `has_variants` (Boolean).
+  - Nếu `has_variants == false`: FE giữ nguyên nút "Thêm vào giỏ" để gọi API mua luôn với giá mặc định.
+  - Nếu `has_variants == true`: FE đổi nút bấm thành "Chọn loại". Khi người dùng nhấn vào, FE bật Bottom Sheet lên (đồng thời xoay spinner) và gọi nhanh API `GET /product/:productId/variants`. Quá trình gọi API này mất ~100-200ms, ăn khớp với hiệu ứng Bottom Sheet. Khi có data thì render các nút bấm (Màu Đỏ, Size L,...) để user chọn. Mảng `skus` mặc định ở API danh sách đã bị ẩn để tối ưu băng thông.
 
 ### c. Xử lý Tương Tác
 

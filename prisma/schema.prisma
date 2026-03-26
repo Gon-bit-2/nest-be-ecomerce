@@ -85,7 +85,6 @@ model User {
   createdOrders               Order[]               @relation("OrderCreatedBy")
   updatedOrders               Order[]               @relation("OrderUpdatedBy")
   deletedOrders               Order[]               @relation("OrderDeletedBy")
-  soldOrders                  Order[]               @relation("Shop")
   createdUserTranslations     UserTranslation[]     @relation("UserTranslationCreatedBy")
   updatedUserTranslations     UserTranslation[]     @relation("UserTranslationUpdatedBy")
   deletedUserTranslations     UserTranslation[]     @relation("UserTranslationDeletedBy")
@@ -93,6 +92,7 @@ model User {
   sentMessages                Message[]             @relation("FromUser")
   receivedMessages            Message[]             @relation("ToUser")
   websockets                  Websocket[]
+  shop                        Shop?
   savedDiscounts              UserSavedDiscount[]
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
@@ -112,14 +112,12 @@ model User {
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   Device            Device[]
-  shopDiscounts     Discount[]         @relation("ShopDiscounts")
   discountUsages    DiscountUsage[]
   discounts         Discount[]
   deletedDiscounts  Discount[]         @relation("DiscountDeletedBy")
   createdDiscounts  Discount[]         @relation("DiscountCreatedBy")
   updatedDiscounts  Discount[]         @relation("DiscountUpdatedBy")
   // [Video Feature Relations]
-  shopVideos        ShopVideo[] // Video do shop đăng tải
   videoLikes        ShopVideoLike[] // Video user đã like
   videoComments     ShopVideoComment[] // Comment của user
   deletedShopVideos ShopVideo[]        @relation("ShopVideoDeletedBy")
@@ -262,6 +260,8 @@ model Product {
   publishedAt         DateTime?
   brandId             Int
   brand               Brand                @relation(fields: [brandId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  shopId              Int?
+  shop                Shop?                @relation(fields: [shopId], references: [id], onDelete: Cascade)
   images              String[]
   categories          Category[]
   /// [Variants]
@@ -480,7 +480,7 @@ model Order {
   shippingFee    Float           @default(0)
   discountAmount Float           @default(0)
   shopId         Int
-  shop           User            @relation("Shop", fields: [shopId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  shop           Shop            @relation("ShopOrders", fields: [shopId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   paymentId      Int
   payment        Payment         @relation(fields: [paymentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   discountUsages DiscountUsage[]
@@ -522,7 +522,7 @@ model Discount {
   savedByUsers UserSavedDiscount[]
 
   shopId Int?
-  shop   User? @relation("ShopDiscounts", fields: [shopId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  shop   Shop? @relation("ShopDiscounts", fields: [shopId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   usages DiscountUsage[]
 
@@ -667,7 +667,7 @@ model ShopVideo {
 
   // Relations
   shopId Int
-  shop   User @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shop   Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   products ShopVideoProduct[] // List sản phẩm gắn trong video
   likes    ShopVideoLike[]
@@ -836,4 +836,28 @@ enum VideoStatus {
   ACTIVE
   REJECTED
   HIDDEN
+}
+
+model Shop {
+  id          Int         @id
+  user        User        @relation(fields: [id], references: [id], onDelete: Cascade)
+  name        String      @db.VarChar(255)
+  description String?     @db.Text
+  phoneNumber String?     @db.VarChar(50)
+  address     String?     @db.VarChar(1000)
+  email       String?     @db.VarChar(255)
+  status      ShopStatus  @default(PENDING)
+  orders      Order[]     @relation("ShopOrders")
+  discounts   Discount[]  @relation("ShopDiscounts")
+  videos      ShopVideo[]
+  products    Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ShopStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

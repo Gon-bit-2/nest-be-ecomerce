@@ -44,4 +44,12 @@ export class ProductService {
     }
     return product
   }
+
+  async getVariants(props: { productId: number }) {
+    const product = await this.productRepo.findById(props.productId)
+    if (!product) {
+      throw NotFoundRecordException
+    }
+    return this.productRepo.getVariants(props.productId)
+  }
 }
