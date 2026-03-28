@@ -26,6 +26,7 @@ const SellerModule = [
   'MESSAGE',
   'SHOP-VIDEO',
   'ADDRESS',
+  'NOTIFICATION',
 ]
 const ClientModule = [
   'AUTH',
@@ -38,6 +39,7 @@ const ClientModule = [
   'DISCOUNT',
   'MESSAGE',
   'ADDRESS',
+  'NOTIFICATION',
 ]
 
 const prisma = new PrismaService()

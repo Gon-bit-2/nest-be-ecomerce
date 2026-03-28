@@ -2,12 +2,13 @@ import { Injectable } from '@nestjs/common'
 import { OrderRepo } from './repository/order.repo'
 import { CreateOrderBodyType, GetOrderListQueryType, UpdateOrderStatusType } from './order.model'
 import { AddressService } from 'src/address/address.service'
-
+import { EventEmitter2 } from '@nestjs/event-emitter'
 @Injectable()
 export class OrderService {
   constructor(
     private readonly orderRepo: OrderRepo,
     private readonly addressService: AddressService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
   async list(userId: number, query: GetOrderListQueryType) {
     return this.orderRepo.list(userId, query)
@@ -34,13 +35,40 @@ export class OrderService {
       }),
     )
     const result = await this.orderRepo.create(userId, resolvedBody)
+    //
+    result.orders.forEach((order) => {
+      this.eventEmitter.emit('notification.send', {
+        userId: userId, // Bắn cho người mua
+        title: 'Đặt hàng thành công!',
+        body: `Đơn hàng #${order.id} của bạn đã được ghi nhận.`,
+        type: 'ORDER',
+        data: { orderId: order.id, url: `/user/orders/${order.id}` },
+      })
+
+      // (Tính năng mở rộng sau này) Bắn cho chủ Shop biết có đơn mới
+      // this.eventEmitter.emit('notification.send', {
+      //   userId: order.shopId, // hoặc userId chủ shop
+      //   title: 'Đơn hàng mới',
+      //   body: `Bạn vừa có đơn hàng mới #${order.id}.`,
+      //   type: 'SELLER_ORDER'
+      // })
+    })
     return result
   }
   async detail(userId: number, orderId: number) {
     return this.orderRepo.detail(userId, orderId)
   }
   async cancel(userId: number, orderId: number) {
-    return this.orderRepo.cancel(userId, orderId)
+    const cancelledOrder = await this.orderRepo.cancel(userId, orderId)
+    this.eventEmitter.emit('notification.send', {
+      userId: userId, // Bắn cho người mua
+      title: 'Đơn hàng đã được hủy',
+      body: `Đơn hàng #${cancelledOrder.id} của bạn đã được hủy.`,
+      type: 'ORDER',
+      data: { orderId: cancelledOrder.id, url: `/user/orders/${cancelledOrder.id}` },
+    })
+
+    return cancelledOrder
   }
   async updateStatus(userId: number, orderId: number, body: UpdateOrderStatusType) {
     return this.orderRepo.updateStatus(orderId, userId, body)

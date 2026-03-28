@@ -12,6 +12,11 @@ declare global {
       phone: string
       address: string
     }
+    type NotificationDataType = {
+      orderId?: number
+      url?: string
+      [key: string]: any
+    }
   }
 }
 
