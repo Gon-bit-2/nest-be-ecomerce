@@ -1831,3 +1831,65 @@ _No Body_
 - `Authorization`: `Bearer <accessToken>`
 
 _No Body_
+
+---
+
+## Shop Module (Multi-vendor)
+
+### Register Shop
+
+**POST** `/shop/register`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+```json
+{
+  "name": "My Awesome Shop",
+  "description": "Chuyên bán đồ công nghệ", // Optional
+  "phoneNumber": "0987654321", // Optional
+  "address": "123 Đường Công Nghệ, Quận 1, TP.HCM", // Optional
+  "email": "shop@example.com" // Optional
+}
+```
+
+### Get My Shop Info
+
+**GET** `/shop/my-shop`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+_No Body_
+
+**Response:**
+Trả về thông tin cửa hàng hiện tại của user đang đăng nhập. Nếu chưa tạo, trả về `null`. Nếu đã tạo, kèm theo field `status` (`PENDING`, `APPROVED`, `REJECTED`) để frontend render giao diện tương ứng.
+
+---
+
+## Notification Module
+
+### List Notifications
+**GET** `/notifications?page=1&limit=10&isRead=false`
+
+**Headers**
+- `Authorization`: `Bearer <accessToken>`
+
+**Query Params:**
+- `page`: number (default 1)
+- `limit`: number (default 10)
+- `isRead`: boolean (optional) - Lọc danh sách thông báo đã đọc hay chưa đọc
+
+### Mark All As Read
+**PATCH** `/notifications/read-all`
+
+**Headers**
+- `Authorization`: `Bearer <accessToken>`
+
+### Mark specific Notification As Read
+**PATCH** `/notifications/:notificationId/read`
+
+**Headers**
+- `Authorization`: `Bearer <accessToken>`

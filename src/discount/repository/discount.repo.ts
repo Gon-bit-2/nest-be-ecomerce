@@ -224,7 +224,7 @@ export class DiscountRepo {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2003') {
-          throw new BadRequestException('Mã giảm giá không tồn tại')
+          throw new BadRequestException(' Danh mục, Sản phẩm hoặc Cửa hàng không hợp lệ!')
         }
       }
       throw error
