@@ -512,7 +512,7 @@ const myVouchers = await fetch('/discount/my-vouchers?page=1&limit=10', {
 
 - Chỉ lưu được voucher đang active và chưa hết hạn
 - Gọi lưu lại voucher đã lưu rồi → trả về kết quả cũ (idempotent), không lỗi
-- `GET /discount/my-vouchers` chỉ trả về voucher chưa dùng (`isUsed = false`), còn hiệu lực
+- `GET /discount/my-vouchers` chỉ trả về voucher chưa dùng hoặc chưa quá số lượt (`isUsed = false`), còn hiệu lực
 
 ### d. Preview Voucher Trước Khi Đặt Hàng
 
@@ -587,7 +587,7 @@ const order = await fetch('/order', {
 - `shopDiscountCode` phải là voucher scope `SHOP` của đúng `shopId`; `platformDiscountCode` phải là voucher scope `PLATFORM`
 - Nếu mã không hợp lệ → API trả lỗi `400 Bad Request` kèm message mô tả lý do
 - Backend tự validate (kiểm tra hạn, lượt dùng, giá trị tối thiểu, sản phẩm áp dụng) trong cùng transaction
-- Khi thành công: tạo `DiscountUsage`, tăng `useCount`, đánh dấu `isUsed = true` cho voucher đã lưu
+- Khi thành công: tạo `DiscountUsage`, tăng `useCount`. Đánh dấu `isUsed = true` cho voucher trong ví CHỈ khi user đã dùng hết số lượt tối đa (`maxUsesPerUser`).
 
 ### f. Luồng Hoàn Chỉnh (Recommended Flow)
 
@@ -600,12 +600,25 @@ const order = await fetch('/order', {
 6. PUT /order/:id (hủy đơn)         → Hệ thống tự hoàn voucher
 ```
 
-### g. Hiển Thị Voucher
+### g. Giao Diện & Tính Toán Giá Trị Voucher (Dành Cho FE)
 
-- **Voucher giảm giá:** Hiển thị `discountAmount` và `finalPrice`
-- **Voucher freeship:** Hiển thị `shippingDiscount` và `finalShippingFee`
-- **`maxDiscountValue`:** Hiển thị dạng "Giảm {value}%, tối đa {maxDiscountValue}đ" hoặc "Freeship tối đa {maxDiscountValue}đ"
-- **`discountAmount` trên Order:** Hiển thị tổng tiền đã giảm trong trang chi tiết đơn hàng
+- **Backend đảm nhận toàn bộ việc tính toán phức tạp:** Frontend không cần tự tính công thức giảm giá (Stacking, kiểm tra Hạn Sử Dụng, Giới hạn User, Giới hạn theo Sản phẩm, ...). Mọi thứ **đã được thiết kế tính toán chuẩn xác** bên Backend.
+- **Cách FE vận hành tại trang Checkout (Thanh Toán):**
+  1. FE gọi danh sách sản phẩm, tự nhân nhẩm `price * quantity` rải rác trên màn hình.
+  2. FE gọi API `POST /discount/preview` bất cứ khi nào User chọn hoặc đổi mã giảm.
+  3. API này sẽ soi thẳng vào Data thật, tự lọc ra các Sản phẩm được phép áp dụng (`applyTo: 'SPECIFIC' / 'ALL'`), trả về thẳng 4 con số cuối cùng:
+     - `discountAmount`: Số tiền giảm giá cho sản phẩm.
+     - `shippingDiscount`: Số tiền giảm cho phí vận chuyển.
+     - `finalPrice`: Giá tiền CẦN TRẢ cho Sản phẩm (Đã trừ `discountAmount`).
+     - `finalShippingFee`: Giá tiền CẦN TRẢ cho Shipping (Đã trừ `shippingDiscount`).
+  4. Frontend **đóng đinh** 4 con số này và in thẳng ra màn hình phần "Tổng Cộng". (UI UX tương tự Shopee).
+- **Trường hợp lỗi chặn thanh toán:**
+  - Nếu mã hết hạn, chưa đạt giá trị tối thiểu (`minOrderValue`), hoặc user dùng quá số lần quy định, API `preview` (hoặc `POST /order`) sẽ trực tiếp ném ra Error `400 Bad Request` kèm theo Message Tiếng Việt rõ ràng (VD: "Đơn hàng tối thiểu phải từ 50000 để dùng mã này").
+  - Frontend chỉ cần `.catch()` lỗi đó và Alert nguyên cái `error.message` ra màn hình, tuyệt đối không cần viết if/else logic ở dưới Client.
+- **Cách hiển thị nhãn của từng Voucher:**
+  - Nếu Voucher là **Giảm Giá**: Hãy render UI `discountAmount` (Tiết kiệm được) và Giá Sau Giảm (`finalPrice`).
+  - Nếu Voucher là **Freeship**: Hãy render UI `shippingDiscount` và Phí Ship Sau Cùng (`finalShippingFee`).
+  - Lấy tham số `maxDiscountValue` để in câu: "Giảm {value}%, tối đa {maxDiscountValue}đ".
 
 ### h. Hoàn Voucher Khi Hủy Đơn
 
@@ -614,13 +627,19 @@ const order = await fetch('/order', {
 - User có thể sử dụng lại voucher cho đơn hàng khác
 - Frontend không cần xử lý gì thêm — backend tự xử lý hoàn toàn
 
+### i. Quản Lý Voucher (Dành Cho Seller & Admin)
+
+- **Quyền Seller:** Khi gọi API tạo/sửa/xoá mã giảm giá (`POST/PUT/DELETE /discount`), hệ thống sẽ tự động bắt ràng buộc xác thực. Seller chỉ được tạo ra các mã thuộc về shop mình (`scope = 'SHOP'`). Ngoài ra, nếu có truyền kèm danh sách các sản phẩm (mảng `productIds`) để tạo mã cụ thể thì sẽ hệ thống sẽ kiểm tra xem liệu ID sản phẩm này có chính xác thuộc về Seller đó không (nhằm tránh mượn ID shop người khác). Frontend **không cần truyền** `shopId` vào body, Backend tự nội suy qua AccessToken.
+- **Quyền Admin:** Admin có toàn quyền tạo/sửa/xoá mã giảm giá TOÀN SÀN (`scope = 'PLATFORM'`). Lúc này `shopId` sẽ được tự động gán bằng `null`.
+
 ## 15. Tích Hợp Đăng Ký Shop (Hệ thống Multi-vendor)
 
-Kể từ giờ, thông tin Shop (cửa hàng kinh doanh) đã được tách bạch với thông tin User. 
+Kể từ giờ, thông tin Shop (cửa hàng kinh doanh) đã được tách bạch với thông tin User.
 
 ### a. Đăng ký mở Cửa hàng (Shop Registration)
+
 - **API:** `POST /shop/register`
-- **Mô tả:** User muốn kinh doanh sẽ phải điền form đăng ký cửa hàng. 
+- **Mô tả:** User muốn kinh doanh sẽ phải điền form đăng ký cửa hàng.
 - **Body:**
   ```json
   {
@@ -634,39 +653,42 @@ Kể từ giờ, thông tin Shop (cửa hàng kinh doanh) đã được tách b�
 - **Xử lý Response:** Nếu thành công API trả về message `"Shop registration created successfully. Please wait for admin approval."` và mặc định trạng thái của shop sẽ là `PENDING`.
 
 ### b. Kiểm tra trạng thái Shop hiện tại của User
+
 - **API:** `GET /shop/my-shop`
 - **Mô tả:** Dùng để kiểm tra xem User hiện tại đã đăng ký Shop chưa, và trạng thái duyệt thế nào để render giao diện phù hợp.
 - **Xử lý logic Frontend:**
-  - Nếu API trả về `null`: User chưa từng tạo đơn đăng ký Shop. ➡ *Hiển thị nút "Đăng ký bán hàng".*
-  - Nếu API trả về object kèm `status === 'PENDING'`: Đơn đăng ký đang chờ admin duyệt. ➡ *Hiển thị "Hồ sơ đang chờ duyệt".*
-  - Nếu `status === 'REJECTED'`: Bị từ chối. ➡ *Hiển thị lý do / Form tạo lại.*
-  - Nếu `status === 'APPROVED'`: Cửa hàng đã hoạt động. ➡ *Chuyển hướng vào trang Dashboard quản lý (Seller Center).*
+  - Nếu API trả về `null`: User chưa từng tạo đơn đăng ký Shop. ➡ _Hiển thị nút "Đăng ký bán hàng"._
+  - Nếu API trả về object kèm `status === 'PENDING'`: Đơn đăng ký đang chờ admin duyệt. ➡ _Hiển thị "Hồ sơ đang chờ duyệt"._
+  - Nếu `status === 'REJECTED'`: Bị từ chối. ➡ _Hiển thị lý do / Form tạo lại._
+  - Nếu `status === 'APPROVED'`: Cửa hàng đã hoạt động. ➡ _Chuyển hướng vào trang Dashboard quản lý (Seller Center)._
 
 > **Lưu ý:** Hiện tại `shopId` của một Shop luôn bằng với `userId` (1-1 relationship) nên logic thao tác với đơn hàng, mã giảm giá và video trước đó không bị ảnh hưởng.
 
 ## 12. Tích Hợp WebSockets & Thông Báo (Notifications)
 
 ### a. WebSockets Connection
+
 - **Trường hợp sử dụng:** Thông báo hệ thống realtime (in-app notification), trạng thái thanh toán, chat.
 - **Kết nối:** Cần gửi `accessToken` khi init Socket.
 
 ```javascript
-import { io } from 'socket.io-client';
+import { io } from 'socket.io-client'
 
 const socket = io('http://localhost:9999', {
   extraHeaders: {
     Authorization: `Bearer ${accessToken}`,
-  }
-});
+  },
+})
 ```
 
 ### b. Lắng nghe sự kiện thông báo (In-App Notifications)
+
 - **Event Name:** `new-notification`
 - Payload nhận được sẽ tự động lưu vào DB. Dùng payload này để hiện popup (Toast, Snack bar).
 
 ```javascript
 socket.on('new-notification', (data) => {
-  console.log('New notification:', data);
+  console.log('New notification:', data)
   // Cấu trúc Data:
   // {
   //   id: 1,
@@ -677,11 +699,12 @@ socket.on('new-notification', (data) => {
   //   isRead: false,
   //   createdAt: "2023-10-27T10:00:00Z",
   // }
-  toast.success(data.title);
-});
+  toast.success(data.title)
+})
 ```
 
 ### c. Quy trình UI Notification List (Quả chuông)
+
 1. Gọi **API GET /notifications** ở lần load trang đầu tiên hoặc khi mở danh sách (kèm `isRead=false` để lấy số lượng chuông thông báo chưa đọc).
 2. Khi người dùng click vào một dòng thông báo, gọi **API PATCH /notifications/:notificationId/read** để đánh dấu đã xem, sau đó redirect bằng URL trong `data.url`.
 3. Nếu người dùng chọn 'Đánh dấu tất cả đã đọc', gọi **API PATCH /notifications/read-all**.
