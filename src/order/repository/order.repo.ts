@@ -112,15 +112,17 @@ export class OrderRepo {
       throw new BadRequestException(`Mã "${code}" đã hết lượt sử dụng`)
     }
 
-    // 10. Mark UserSavedDiscount as used (if user saved this voucher)
-    await tx.userSavedDiscount
-      .update({
-        where: { userId_discountId: { userId, discountId: discount.id } },
-        data: { isUsed: true },
-      })
-      .catch(() => {
-        // User didn't save this voucher beforehand — that's fine
-      })
+    // 10. Mark UserSavedDiscount as used ONLY if user reached max usage (if they saved this voucher)
+    if (discount.maxUsesPerUser > 0 && userUsage + 1 >= discount.maxUsesPerUser) {
+      await tx.userSavedDiscount
+        .update({
+          where: { userId_discountId: { userId, discountId: discount.id } },
+          data: { isUsed: true },
+        })
+        .catch(() => {
+          // User didn't save this voucher beforehand — that's fine
+        })
+    }
 
     return { discountAmount, shippingDiscount }
   }

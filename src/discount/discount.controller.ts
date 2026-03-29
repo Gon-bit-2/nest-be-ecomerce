@@ -13,7 +13,9 @@ import {
 } from './dto/discount.dto'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { ActiveUser } from 'src/shared/decorators/active-user.decorator'
-import { IsAdmin, IsSeller } from 'src/shared/decorators/roles.decorator'
+import { IsAdmin, IsSeller, Roles } from 'src/shared/decorators/roles.decorator'
+import roleName from 'src/shared/constants/role.constant'
+
 @Controller('discount')
 export class DiscountController {
   constructor(private readonly discountService: DiscountService) {}
@@ -44,27 +46,42 @@ export class DiscountController {
   }
 
   @Post()
-  @IsSeller()
+  @Roles(roleName.Admin, roleName.Seller)
   @ZodSerializerDto(CreateDiscountResBodyDTO)
-  async create(@Body() body: CreateDiscountBodyDTO, @ActiveUser('userId') userId: number) {
-    return this.discountService.create({ body, createdById: userId })
+  async create(
+    @Body() body: CreateDiscountBodyDTO,
+    @ActiveUser('userId') userId: number,
+    @ActiveUser('roleName') userRole: string,
+  ) {
+    return this.discountService.create({ body, createdById: userId, userRole })
   }
 
   @Put(':discountId')
-  @IsSeller()
+  @Roles(roleName.Admin, roleName.Seller)
   @ZodSerializerDto(UpdateDiscountResBodyDTO)
   async update(
     @Param() param: GetDiscountParamsDTO,
     @Body() body: UpdateDiscountBodyDTO,
     @ActiveUser('userId') userId: number,
+    @ActiveUser('roleName') userRole: string,
   ) {
-    return this.discountService.update({ discountId: param.discountId, body, updatedById: userId, createdById: userId })
+    return this.discountService.update({
+      discountId: param.discountId,
+      body,
+      updatedById: userId,
+      createdById: userId,
+      userRole,
+    })
   }
 
   @Delete(':discountId')
-  @IsSeller()
-  async delete(@Param() param: GetDiscountParamsDTO, @ActiveUser('userId') userId: number) {
-    return this.discountService.delete({ discountId: param.discountId, deletedById: userId })
+  @Roles(roleName.Admin, roleName.Seller)
+  async delete(
+    @Param() param: GetDiscountParamsDTO,
+    @ActiveUser('userId') userId: number,
+    @ActiveUser('roleName') userRole: string,
+  ) {
+    return this.discountService.delete({ discountId: param.discountId, deletedById: userId, userRole })
   }
 
   @Post(':discountId/save')

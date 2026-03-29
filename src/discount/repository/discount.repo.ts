@@ -194,6 +194,20 @@ export class DiscountRepo {
   }): Promise<CreateDiscountBodyResType> {
     try {
       const { productIds, categoryIds, startDate, endDate, ...data } = body
+
+      if (data.scope === 'SHOP' && data.shopId && productIds && productIds.length > 0) {
+        const validProductsCount = await this.prismaService.product.count({
+          where: {
+            id: { in: productIds },
+            shopId: data.shopId,
+          },
+        })
+
+        if (validProductsCount !== productIds.length) {
+          throw new BadRequestException('Một hoặc nhiều sản phẩm không hợp lệ hoặc không thuộc cửa hàng này!')
+        }
+      }
+
       const discount = await this.prismaService.discount.create({
         data: {
           ...data,
@@ -245,10 +259,31 @@ export class DiscountRepo {
 
     const result = await this.prismaService.$transaction(async (tx) => {
       //Check discount tồn tại
-      const discount = await tx.discount.findUnique({ where: { id: discountId }, select: { shopId: true } })
+      const discount = await tx.discount.findUnique({
+        where: { id: discountId },
+        select: { scope: true, shopId: true },
+      })
       if (!discount) {
         throw new NotFoundException('Mã giảm giá không tồn tại')
       }
+
+      // Kiểm tra xem sản phẩm mới có thuộc shop này không
+      const checkScope = data.scope || discount.scope
+      const checkShopId = data.shopId !== undefined ? data.shopId : discount.shopId
+
+      if (checkScope === 'SHOP' && checkShopId && newProductIds && newProductIds.length > 0) {
+        const validProductsCount = await tx.product.count({
+          where: {
+            id: { in: newProductIds },
+            shopId: checkShopId,
+          },
+        })
+
+        if (validProductsCount !== newProductIds.length) {
+          throw new BadRequestException('Một hoặc nhiều sản phẩm không hợp lệ hoặc không thuộc cửa hàng này!')
+        }
+      }
+
       // A. XỬ LÝ PRODUCTS
       if (newProductIds) {
         // A1. Lấy danh sách ID hiện tại trong DB
@@ -299,19 +334,26 @@ export class DiscountRepo {
       }
 
       // C. UPDATE THÔNG TIN CƠ BẢN
-      return tx.discount.update({
-        where: { id: discountId, shopId: createdById },
-        data: {
-          ...data,
-          ...(data.startDate && { startDate: new Date(data.startDate) }),
-          ...(data.endDate && { endDate: new Date(data.endDate) }),
-          updatedById,
-        },
-        include: {
-          products: true,
-          categories: true,
-        },
-      })
+      try {
+        return await tx.discount.update({
+          where: { id: discountId },
+          data: {
+            ...data,
+            ...(data.startDate && { startDate: new Date(data.startDate) }),
+            ...(data.endDate && { endDate: new Date(data.endDate) }),
+            updatedById,
+          },
+          include: {
+            products: true,
+            categories: true,
+          },
+        })
+      } catch (error) {
+        if (error instanceof PrismaClientKnownRequestError && error.code === 'P2025') {
+          throw new NotFoundException('Mã giảm giá đã bị thay đổi hoặc không còn tồn tại!')
+        }
+        throw error
+      }
     })
 
     // 3. Map kết quả trả về

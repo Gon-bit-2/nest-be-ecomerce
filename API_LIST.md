@@ -1373,13 +1373,18 @@ _No Auth Headers_ (Public Endpoint — Secured by API Key header)
 
 - `Authorization`: `Bearer <accessToken>`
 
-### Create Discount (Seller)
+### Create Discount (Admin, Seller)
 
 **POST** `/discount`
 
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
+
+**Lưu ý quan trọng về Quyền:**
+
+- **Seller (Cửa hàng):** Chỉ có thể tạo mã với `scope="SHOP"`. Backend sẽ tự động gán `shopId` bằng ID của cửa hàng (tương đương `userId` của Admin của shop đó). Hệ thống cũng sẽ kiểm tra danh sách `productIds` truyền lên có thực sự thuộc quyền sở hữu của chính Shop đó hay không.
+- **Admin (Quản trị viên):** Có quyền tạo mã với `scope="PLATFORM"` (mã áp dụng toàn sàn). Khi đó `shopId` sẽ được lưu là `null`.
 
 ```json
 {
@@ -1433,13 +1438,17 @@ _No Auth Headers_ (Public Endpoint — Secured by API Key header)
 - Ví dụ: "Freeship tối đa 30K" → `type: SHIPPING`, `value: 100`, `maxDiscountValue: 30000`
 - Nếu `maxDiscountValue` = 0 hoặc null → không giới hạn
 
-### Update Discount (Seller)
+### Update Discount (Admin, Seller)
 
 **PUT** `/discount/:discountId`
 
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
+
+**Lưu ý quan trọng về Quyền:**
+
+- Tương tự như tạo mới, tuỳ thuộc vào Role gọi API và `scope` của mã giảm giá mà Backend sẽ ràng buộc bảo mật: Seller chỉ cập nhật được mã của Shop mình, Admin cập nhật được mã toàn sàn (`PLATFORM`). Logic kiểm tra sản phẩm cũng được thực thi bảo chứng.
 
 ```json
 {
@@ -1448,13 +1457,18 @@ _No Auth Headers_ (Public Endpoint — Secured by API Key header)
 }
 ```
 
-### Delete Discount (Seller)
+### Delete Discount (Admin, Seller)
 
 **DELETE** `/discount/:discountId`
 
 **Headers**
 
 - `Authorization`: `Bearer <accessToken>`
+
+**Lưu ý quan trọng về Quyền:**
+
+- **Seller:** Chỉ có thể xoá mã giảm giá mà `scope='SHOP'` và `shopId` trùng với cửa hàng của chính mình.
+- **Admin:** Được phép xoá mã giảm giá thuộc quyền sàn `scope='PLATFORM'`.
 
 ### Save Voucher (User)
 
@@ -1472,8 +1486,8 @@ _No Body_
 
 - Chỉ lưu được voucher đang active và chưa hết hạn
 - Gọi lại endpoint này nếu đã lưu rồi → trả về kết quả cũ (idempotent), không báo lỗi
-- Khi user dùng voucher đặt hàng → hệ thống tự động đánh dấu `isUsed = true`
-- Khi user hủy đơn → hệ thống tự động reset `isUsed = false`, user có thể dùng lại
+- Khi user dùng voucher đặt hàng → hệ thống tự động tăng biến đếm, CHỈ đánh dấu `isUsed = true` (biến mất khỏi ví) khi người dùng vắt kiệt số lượt cho phép (`maxUsesPerUser`).
+- Khi user hủy đơn → hệ thống tự động hoàn lại số lượt đã dùng và reset `isUsed = false`, user có thể dùng lại
 
 ### Preview Discount
 
@@ -1872,24 +1886,31 @@ Trả về thông tin cửa hàng hiện tại của user đang đăng nhập. N
 ## Notification Module
 
 ### List Notifications
+
 **GET** `/notifications?page=1&limit=10&isRead=false`
 
 **Headers**
+
 - `Authorization`: `Bearer <accessToken>`
 
 **Query Params:**
+
 - `page`: number (default 1)
 - `limit`: number (default 10)
 - `isRead`: boolean (optional) - Lọc danh sách thông báo đã đọc hay chưa đọc
 
 ### Mark All As Read
+
 **PATCH** `/notifications/read-all`
 
 **Headers**
+
 - `Authorization`: `Bearer <accessToken>`
 
 ### Mark specific Notification As Read
+
 **PATCH** `/notifications/:notificationId/read`
 
 **Headers**
+
 - `Authorization`: `Bearer <accessToken>`
