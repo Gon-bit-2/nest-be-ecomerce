@@ -5,12 +5,16 @@ import { NotificationGateway } from 'websockets/notification.gateway'
 import type { CreateNotificationInternalType } from './notification.model'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 import { NotFoundRecordException } from 'src/shared/error/error'
+import { EmailService } from 'src/shared/service/email.service'
+import { ShareUserRepository } from 'src/shared/repositories/shared-user.repo'
 
 @Injectable()
 export class NotificationService {
   constructor(
     private readonly notificationRepo: NotificationRepo,
     private readonly notificationGateway: NotificationGateway,
+    private readonly shareUserRepo: ShareUserRepository,
+    private readonly emailService: EmailService,
   ) {}
 
   @OnEvent('notification.send')
@@ -23,6 +27,37 @@ export class NotificationService {
       this.notificationGateway.sendNotificationToUser(payload.userId, notification)
     } catch (error) {
       console.error('Lỗi khi xử lý notification.send', error)
+    }
+  }
+
+  @OnEvent('payment.success')
+  async handlePaymentSuccess(data: { userId: number; orderCode: string | null; amount: number }) {
+    try {
+      // 1. Lấy thông tin user
+      const user = await this.shareUserRepo.findUnique({ id: data.userId })
+      if (!user) return
+
+      const notificationTitle = 'Thanh toán thành công'
+      const notificationBody = `Đơn hàng ${data.orderCode ? '#' + data.orderCode : 'của bạn'} đã được thanh toán thành công số tiền ${data.amount.toLocaleString('vi-VN')} VND.`
+
+      // 2. Gửi in-app notification (hoặc Push notification nếu client hỗ trợ FCM sẽ config ở đây)
+      await this.handleNotificationSendEvent({
+        userId: data.userId,
+        title: notificationTitle,
+        body: notificationBody,
+        type: 'ORDER',
+      })
+
+      // 3. Gửi email
+      if (user.email) {
+        await this.emailService.sendPaymentSuccessEmail({
+          email: user.email,
+          orderCode: data.orderCode || 'N/A',
+          amount: data.amount,
+        })
+      }
+    } catch (error) {
+      console.error('Lỗi khi xử lý payment.success notification', error)
     }
   }
 

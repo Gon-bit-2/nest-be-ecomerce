@@ -4,7 +4,8 @@ Tài liệu này cung cấp các quy chuẩn và hướng dẫn để đội Fro
 
 ## 1. Cấu Hình Chung
 
-- **Base URL (Dev):** `http://localhost:9999`
+- **Base URL (Dev):** `http://localhost:9999` (Cho các API chung)
+- **Base URL (Nhận Webhook từ ngoài/Test thực tế với 3rd party):** `https://guardlike-danica-unguileful.ngrok-free.app`
 - **Prefix:** Hiện tại API không sử dụng prefix global (ví dụ `/api/v1`), các endpoint bắt đầu trực tiếp từ root (ví dụ `/auth/login`).
 - **Thời gian:** Toàn bộ thời gian (datetime) trao đổi nên sử dụng format ISO 8601 UTC (ví dụ: `2023-10-27T10:00:00Z`).
 
@@ -387,7 +388,7 @@ Gọi API `GET /payment/config` (Public, không cần auth) để lấy thông t
 }
 ```
 
-> **Khuyến nghị:** Gọi API này một lần khi khởi tạo app hoặc khi vào trang Checkout, cache lại kết quả.
+> **Khuyến nghị & Tối ưu UX:** Tốt nhất nên gọi API này một lần lúc khởi tạo app (Lưu vào Redux/Zustand) hoặc ngay khi user truy cập vào trang `CheckoutPage`, tránh việc đợi user bấm "Đặt hàng" mới gọi — giúp việc hiển thị mã QR ngay lập tức sau khi tạo Order mà không có độ trễ gọi API lần 2.
 
 ### c. Tạo QR Code Thanh Toán
 
@@ -426,16 +427,17 @@ const qrUrl = `https://qr.sepay.vn/img?acc=${config.accountNumber}&bank=${config
 
 ### d. Hiển thị Màn Hình QR Code
 
-**Flow UI khuyến nghị:**
+**Flow UI/UX khuyến nghị:**
 
 1. User chọn phương thức thanh toán **"Chuyển khoản ngân hàng"** trên CheckoutPage
 2. Bấm **"Đặt hàng"** → Gọi `POST /order`
 3. Sau khi API trả về thành công → **Điều hướng sang màn hình QR Code riêng biệt** với:
-   - Mã QR (gen từ URL SePay)
-   - Thông tin chuyển khoản: Ngân hàng, STK, Số tiền, Nội dung CK
-   - Bộ đếm ngược 24h (thời gian chờ thanh toán trước khi tự động hủy)
-   - Trạng thái: "Đang chờ thanh toán..."
-4. Khi WebSocket nhận event `payment` → Cập nhật UI thành **"Thanh toán thành công!"** → Cho phép điều hướng về trang đơn hàng
+   - **Mã QR:** (gen từ URL SePay) đặt ở chính giữa.
+   - **Thông tin chuyển khoản:** Hiển thị Ngân hàng, STK, Số tiền, Nội dung CK. **Nên có nút "Sao chép" (Copy)** ở STK và Nội dung CK để user tiện copy bằng tay.
+   - **Loading Spinner:** Có hiệu ứng loading với text "Đang chờ thanh toán..." để user biết luồng đang chạy ngầm.
+   - **Nút "Tôi đã thanh toán":** Hiển thị thêm một nút bấm phụ để user có thể chủ động xác minh phòng trường hợp mạng hoặc Socket bị trễ.
+   - **Bộ đếm ngược 24h:** Hiển thị rõ thời gian còn lại (thời gian chờ thanh toán trước khi đơn bị tự động hủy).
+4. Khi WebSocket nhận event `payment` → Cập nhật UI thành **"Thanh toán thành công! ✅"** → Dừng spinner và cho phép (hoặc tự động) điều hướng về trang Đơn hàng của tôi sau 2-3s.
 
 ### e. Lắng Nghe Thanh Toán Real-time (WebSocket)
 
@@ -451,22 +453,35 @@ const paymentSocket = io('http://localhost:9999/payment', {
 })
 
 paymentSocket.on('payment', (data) => {
+  // data format thường gồm: { status: 'success', paymentId: 123 }
   if (data.status === 'success') {
-    // Thanh toán thành công!
-    // → Cập nhật UI, hiển thị thông báo, điều hướng
+    // 1. Dừng spinner loading
+    // 2. Hiển thị thông báo "Thanh toán thành công" (Tick xanh)
+    // 3. (Optional) Tự động điều hướng user về trang đơn hàng
   }
 })
 ```
 
 > **Lưu ý:** Namespace thanh toán là `/payment`, tách biệt với namespace chat mặc định.
 
-### f. Xử Lý Timeout & Hủy Đơn
+### f. Tính Năng Chủ Động Xác Minh (Fallback Checking)
 
-- Backend tự động **hủy đơn hàng sau 24 giờ** nếu chưa thanh toán (sử dụng BullMQ job queue)
-- Khi đơn bị hủy: Payment → `FAILED`, Orders → `CANCELLED`, stock được hoàn lại
-- Frontend nên hiển thị **bộ đếm ngược** trên trang QR và thông báo khi hết thời gian
-- User có thể chủ động hủy bằng `PUT /order/:orderId`
-- **Hoàn voucher:** Khi đơn bị hủy, hệ thống tự động hoàn lại voucher đã sử dụng — user có thể dùng lại voucher cho đơn hàng khác
+Do đặc thù một số trường hợp (Emulator, FE chạy local không có Ngrok để nhận Webhook, rớt kết nối mạng hoặc Socket chập chờn), nếu chỉ để App bị động chờ Socket thì sẽ gặp rủi ro user đã chuyển khoản nhưng bị kẹt ở màn hình loading. Vì vậy, FE cần bổ sung nút **"Tôi đã thanh toán"** phía dưới mã QR.
+
+**Luồng hoạt động khi nhấn "Tôi đã thanh toán":**
+
+1. FE gọi API kiểm tra trạng thái thanh toán hiện tại (`GET /payment/:paymentId/status`).
+2. API sẽ trả về field `status` của payment đó (`PENDING` | `SUCCESS` | `FAILED`).
+3. **Thành công (Backend đã nhận tiền nhưng Socket trễ/lỗi):** Nếu `status` là `SUCCESS`, FE chủ động dừng spinner, làm mới UI thông báo "Thanh toán thành công! ✅" ngay cho người dùng mà không cần chờ Socket.
+4. **Đang xử lý (SePay/Bank chưa xử lý xong):** Nếu `status` vẫn là `PENDING`, FE hiển thị Toast nhẹ nhàng `"Hệ thống đang kiểm tra giao dịch, vui lòng chờ trong giây lát..."` và tiếp tục giữ màn hình QR/Spinner.
+
+### g. Xử Lý Timeout & Hủy Đơn
+
+- **Hủy bằng Job tự động:** Backend tự động **hủy đơn hàng sau 24 giờ** nếu chưa thanh toán (sử dụng BullMQ job queue).
+- **Trạng thái Hủy:** Khi đơn bị hủy: Payment → `FAILED`, Orders → `CANCELLED`, stock được hoàn lại.
+- **Xử lý UI khi bị hủy:** Giao diện nên hiển thị bộ đếm ngược. Nếu người dùng F5 / reload page, Frontend cần lấy thông tin Order để kiểm tra trạng thái. Nếu trạng thái là `CANCELLED`, cần thay thế QR Code bằng thông báo tĩnh: "Đơn hàng đã hết hạn thanh toán".
+- **Hủy chủ động (User):** User có thể chủ động hủy bằng cách nhấn nút trên UI, gọi API `PUT /order/:orderId` với status huỷ.
+- **Hoàn voucher:** Khi đơn bị hủy (cả thủ công lẫn quá hạn), hệ thống tự động hoàn lại voucher đã sử dụng — user có thể dùng lại voucher cho đơn hàng khác. Frontend không cần xử lý thêm bước này.
 
 ---
 

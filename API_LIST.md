@@ -1255,7 +1255,7 @@ _No Body_
 1. Frontend gọi `GET /payment/config` → Lấy thông tin ngân hàng (`accountNumber`, `bankCode`, `prefix`)
 2. Frontend gọi `POST /order` → Backend tạo đơn hàng + Payment (PENDING) → Trả về `paymentId`
 3. Frontend gen QR Code từ `paymentId` + thông tin bank config → User chuyển khoản
-4. SePay phát hiện giao dịch → Gọi Webhook `POST /payment/receiver`
+4. SePay phát hiện giao dịch → Gọi Webhook `POST /payment/receiver` (Thông qua domain public của Backend, ví dụ Ngrok URL)
 5. Backend xác nhận thanh toán → Cập nhật Order sang `READY_TO_SHIP` → Emit WebSocket event `payment` tới user
 6. Nếu không thanh toán trong 24h → Tự động hủy đơn, hoàn lại stock
 
@@ -1281,9 +1281,27 @@ _No Auth Headers_ (Public)
 https://qr.sepay.vn/img?acc={accountNumber}&bank={bankCode}&amount={totalAmount}&des={prefix}{paymentId}
 ```
 
+### Get Payment Status
+
+**GET** `/payment/:paymentId/status`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+**Response:**
+
+```json
+{
+  "status": "PENDING" // "PENDING" | "SUCCESS" | "FAILED"
+}
+```
+
+**Mô tả:** Frontend dùng API này để chủ động kiểm tra trạng thái thanh toán (Fallback Checking) khi người dùng bấm nút "Tôi đã thanh toán".
+
 ### Webhook Receiver (SePay)
 
-**POST** `/payment/receiver`
+**POST** `/payment/receiver` (Nhận qua Public Domain, VD: `https://guardlike-danica-unguileful.ngrok-free.app/payment/receiver` thay vì localhost)
 
 _No Auth Headers_ (Public Endpoint — Secured by API Key header)
 

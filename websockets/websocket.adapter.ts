@@ -40,7 +40,11 @@ export class WebsocketAdapter extends IoAdapter {
         origin: '*',
         credentials: true,
       },
+      transports: ['websocket', 'polling'],
     })
+    if (this.adapterConstructor) {
+      server.adapter(this.adapterConstructor)
+    }
 
     server.of('/').use((socket, next) => {
       this.authMiddleware(socket, next)
@@ -51,23 +55,26 @@ export class WebsocketAdapter extends IoAdapter {
     return server
   }
   async authMiddleware(socket: Socket, next: (err?: any) => void) {
-    const { authorization } = socket.handshake.headers
+    const authorization =
+      socket.handshake.headers.authorization ||
+      (socket.handshake.auth?.token as string) ||
+      (socket.handshake.query?.token as string)
     if (!authorization) {
+      console.error(`Socket auth failed: Missing authorization headers for socket ${socket.id}`)
       return next(new Error('Missing authorization headers'))
     }
-    const accessToken = authorization.split(' ')[1]
+    const accessToken = authorization.startsWith('Bearer ') ? authorization.split(' ')[1] : authorization
     if (!accessToken) {
+      console.error(`Socket auth failed: Missing access token for socket ${socket.id}`)
       return next(new Error('Missing access token'))
     }
     try {
       const { userId } = await this.tokenService.verifyAccessToken(accessToken)
       await socket.join(generateRoomUserId(userId))
-      // await this.sharedWebsocketRepository.create({ id: socket.id, userId })
-      // socket.on('disconnect', async () => {
-      //   await this.sharedWebsocketRepository.delete(socket.id).catch(() => {})
-      // })
+      console.log(`Socket ${socket.id} joined room ${generateRoomUserId(userId)} on namespace ${socket.nsp.name}`)
       next()
     } catch (error) {
+      console.error(`Socket auth failed: Token verification error for socket ${socket.id}`, error)
       return next(error)
     }
   }

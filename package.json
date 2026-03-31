@@ -7,6 +7,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "initData": "ts-node inittalScript",
+    "dm": "ngrok http --domain=guardlike-danica-unguileful.ngrok-free.dev 9999",
     "a": "ts-node inittalScript/create-permission.ts",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
