@@ -14,6 +14,8 @@ export class ProductService {
       limit: props.query.limit,
       page: props.query.page,
       q: props.query.q,
+      orderBy: props.query.orderBy,
+      sortBy: props.query.sortBy,
     })
   }
 

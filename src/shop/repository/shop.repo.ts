@@ -22,4 +22,46 @@ export class ShopRepo {
       },
     })
   }
+
+  async getStatistics(shopId: number, startOfToday: Date, startOfMonth: Date) {
+    const orders = await this.prismaService.order.findMany({
+      where: {
+        shopId,
+        status: { in: ['READY_TO_SHIP', 'SHIPPED', 'COMPLETED'] }, // Adjust this based on your revenue calculation logic
+        createdAt: { gte: startOfMonth },
+      },
+      select: {
+        createdAt: true,
+        shippingFee: true,
+        discountAmount: true,
+        items: {
+          select: {
+            skuPrice: true,
+            quantity: true,
+          },
+        },
+      },
+    })
+
+    const todayStats = { totalOrders: 0, totalRevenue: 0 }
+    const monthlyStats = { totalOrders: 0, totalRevenue: 0 }
+
+    for (const order of orders) {
+      const orderItemsSum = order.items.reduce((sum, item) => sum + item.skuPrice * item.quantity, 0)
+      const orderRevenue = orderItemsSum + order.shippingFee - order.discountAmount
+
+      monthlyStats.totalOrders += 1
+      monthlyStats.totalRevenue += orderRevenue
+
+      if (order.createdAt >= startOfToday) {
+        todayStats.totalOrders += 1
+        todayStats.totalRevenue += orderRevenue
+      }
+    }
+
+    return {
+      today: todayStats,
+      thisMonth: monthlyStats,
+    }
+  }
 }

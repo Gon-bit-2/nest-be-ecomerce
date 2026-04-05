@@ -23,10 +23,12 @@ const SellerModule = [
   'DISCOUNT',
   'REVIEW',
   'ROLE',
-  'MESSAGE',
+  'MESSAGES',
+  'SHOP',
   'SHOP-VIDEO',
   'ADDRESS',
-  'NOTIFICATION',
+  'NOTIFICATIONS',
+  'LANGUAGE',
 ]
 const ClientModule = [
   'AUTH',
@@ -37,9 +39,10 @@ const ClientModule = [
   'PAYMENT',
   'REVIEW',
   'DISCOUNT',
-  'MESSAGE',
+  'MESSAGES',
   'ADDRESS',
-  'NOTIFICATION',
+  'NOTIFICATIONS',
+  'LANGUAGE',
 ]
 
 const prisma = new PrismaService()

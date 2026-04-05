@@ -139,22 +139,35 @@ export class ProductRepo {
     page,
     limit,
     languageId,
+    orderBy = 'desc',
+    sortBy = 'createdAt',
   }: {
     q: string
     page: number
     limit: number
     languageId: string
+    orderBy?: OrderByType
+    sortBy?: SortByType
   }): Promise<GetProductsResType> {
     const offset = (page - 1) * limit
     const searchString = `%${q}%`
 
+    let orderBySql = Prisma.sql`p."createdAt" DESC`
+    if (sortBy === 'price') {
+      orderBySql = orderBy === 'asc' ? Prisma.sql`p."basePrice" ASC` : Prisma.sql`p."basePrice" DESC`
+    } else if (sortBy === 'createdAt') {
+      orderBySql = orderBy === 'asc' ? Prisma.sql`p."createdAt" ASC` : Prisma.sql`p."createdAt" DESC`
+    } else if (sortBy === 'sale') {
+      orderBySql = orderBy === 'asc' ? Prisma.sql`COUNT(o.id) ASC` : Prisma.sql`COUNT(o.id) DESC`
+    }
+
     // 1. Tìm danh sách ID sản phẩm khớp với từ khóa
     // Sử dụng pg_trgm (ILIKE theo unaccent) và Full Text Search (tsvector)
     const rawIds = await this.prismaService.$queryRaw<{ id: number }[]>`
-      SELECT DISTINCT p.id
+      SELECT p.id
       FROM "Product" p
       LEFT JOIN "ProductTranslation" pt ON p.id = pt."productId"
-      LEFT JOIN "Language" l ON pt."languageId" = l.id
+      ${sortBy === 'sale' ? Prisma.sql`LEFT JOIN "_OrderToProduct" op ON p.id = op."B" LEFT JOIN "Order" o ON op."A" = o.id AND o.status = 'COMPLETED' AND o."deletedAt" IS NULL` : Prisma.empty}
       WHERE
         p."deletedAt" IS NULL
         AND (
@@ -166,6 +179,7 @@ export class ProductRepo {
           OR to_tsvector('simple', unaccent(pt.name)) @@ plainto_tsquery('simple', unaccent(${q}))
         )
       GROUP BY p.id
+      ORDER BY ${orderBySql}
       LIMIT ${limit} OFFSET ${offset}
     `
 

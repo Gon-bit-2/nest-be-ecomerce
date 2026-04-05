@@ -9,6 +9,12 @@ datasource db {
   extensions = [pg_trgm, unaccent]
 }
 
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "./ERD.png"
+  theme    = "forest"
+}
+
 generator json {
   provider = "prisma-json-types-generator"
 }

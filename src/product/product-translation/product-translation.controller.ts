@@ -14,7 +14,7 @@ import { ActiveUser } from 'src/shared/decorators/active-user.decorator'
 export class ProductTranslationController {
   constructor(private readonly productTranslationService: ProductTranslationService) {}
 
-  @Get()
+  @Get(':productTranslationId')
   @ZodSerializerDto(GetProductTranslationDetailResDTO)
   async findById(@Param() params: GetProductTranslationParamsDTO) {
     return this.productTranslationService.findById(params.productTranslationId)
@@ -26,7 +26,7 @@ export class ProductTranslationController {
     return this.productTranslationService.create({ data: body, createdById: userId })
   }
 
-  @Patch()
+  @Patch(':productTranslationId')
   @ZodSerializerDto(GetProductTranslationDetailResDTO)
   async update(
     @Param() params: GetProductTranslationParamsDTO,
@@ -36,7 +36,7 @@ export class ProductTranslationController {
     return this.productTranslationService.update({ data: body, updatedById: userId, id: params.productTranslationId })
   }
 
-  @Delete()
+  @Delete(':productTranslationId')
   @ZodSerializerDto(DeleteProductTranslationParamsDTO)
   async delete(@Param() params: GetProductTranslationParamsDTO, @ActiveUser('userId') userId: number) {
     return this.productTranslationService.delete({ deletedById: userId, id: params.productTranslationId })

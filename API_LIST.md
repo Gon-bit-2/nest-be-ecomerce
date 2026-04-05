@@ -184,7 +184,7 @@ _No Auth Headers_
 
 ### Get Product Translation Detail
 
-**GET** `/product-translation?productTranslationId=1`
+**GET** `/product-translation/:productTranslationId`
 
 **Headers**
 
@@ -705,7 +705,7 @@ _No Body_
 
 ### Get Brand Translation Detail
 
-**GET** `/brand-translation?brandTranslationId=1`
+**GET** `/brand-translation/:brandTranslationId`
 
 **Headers**
 
@@ -823,7 +823,7 @@ _No Body_
 
 ### Get Category Translation Detail
 
-**GET** `/category-transaliton?categoryTranslationId=1`
+**GET** `/category-transaliton/:categoryTranslationId`
 
 **Headers**
 
@@ -850,7 +850,7 @@ _No Body_
 
 ### Update Category Translation
 
-**PUT** `/category-transaliton/:id`
+**PUT** `/category-transaliton/:categoryTranslationId`
 
 **Headers**
 
@@ -867,7 +867,7 @@ _No Body_
 
 ### Delete Category Translation
 
-**DELETE** `/category-transaliton/:id`
+**DELETE** `/category-transaliton/:categoryTranslationId`
 
 **Headers**
 
@@ -911,6 +911,8 @@ _No Body_
 - `q`: string (required) — search keyword
 - `page`: number (default 1)
 - `limit`: number (default 10)
+- `orderBy`: "asc" | "desc" (default "desc")
+- `sortBy`: "price" | "createdAt" | "sale" (default "createdAt")
 
 ### Get Product Detail
 
@@ -1898,6 +1900,30 @@ _No Body_
 
 **Response:**
 Trả về thông tin cửa hàng hiện tại của user đang đăng nhập. Nếu chưa tạo, trả về `null`. Nếu đã tạo, kèm theo field `status` (`PENDING`, `APPROVED`, `REJECTED`) để frontend render giao diện tương ứng.
+
+### Get Shop Statistics
+
+**GET** `/shop/statistics`
+
+**Headers**
+
+- `Authorization`: `Bearer <accessToken>`
+
+**Response:**
+Trả về thống kê đơn hàng và doanh thu của cửa hàng trong ngày hôm nay và trong tháng hiện tại.
+
+```json
+{
+  "today": {
+    "totalOrders": 15,
+    "totalRevenue": 2500000
+  },
+  "thisMonth": {
+    "totalOrders": 120,
+    "totalRevenue": 24500000
+  }
+}
+```
 
 ---
 

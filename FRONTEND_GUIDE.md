@@ -355,9 +355,11 @@ _`shippingFee` có thể bỏ qua (backend mặc định `0`), nhưng nên truy�
 
 ## 12. Tìm Kiếm Sản Phẩm
 
-- Gọi `GET /product/search?q=keyword&page=1&limit=10` để tìm sản phẩm theo từ khóa.
+- Gọi `GET /product/search?q=keyword&page=1&limit=10&sortBy=price&orderBy=asc` để tìm sản phẩm theo từ khóa.
 - Tham số `q` là bắt buộc.
-- Endpoint này tách biệt với `GET /product` (list with filters) và phù hợp cho thanh search bar trên giao diện.
+- Endpoint này tách biệt với `GET /product` (list with filters). Phù hợp cho tính năng Search và hiển thị kết quả tìm kiếm với các tùy chọn sắp xếp:
+  - `sortBy`: "price" (Giá), "createdAt" (Mới nhất), "sale" (Bán chạy). Mặc định là "createdAt".
+  - `orderBy`: "asc" (Tăng dần), "desc" (Giảm dần). Mặc định là "desc".
 
 ## 13. Tích Hợp Thanh Toán SePay (QR Code Transfer)
 
@@ -676,6 +678,25 @@ Kể từ giờ, thông tin Shop (cửa hàng kinh doanh) đã được tách b�
   - Nếu API trả về object kèm `status === 'PENDING'`: Đơn đăng ký đang chờ admin duyệt. ➡ _Hiển thị "Hồ sơ đang chờ duyệt"._
   - Nếu `status === 'REJECTED'`: Bị từ chối. ➡ _Hiển thị lý do / Form tạo lại._
   - Nếu `status === 'APPROVED'`: Cửa hàng đã hoạt động. ➡ _Chuyển hướng vào trang Dashboard quản lý (Seller Center)._
+
+### c. Thống kê Doanh Thu & Đơn Hàng (Shop Dashboard)
+
+- **API:** `GET /shop/statistics`
+- **Mô tả:** Trả về thống kê số lượng đơn hàng và doanh thu của cửa hàng trong **hôm nay** và **tháng này**.
+- **Cách Backend tính toán:** Điểm endpoint này tự động lọc các đơn hàng có trạng thái hợp lệ (`READY_TO_SHIP`, `SHIPPED`, `COMPLETED`) và tự động tính `tổng thành tiền hàng + phí ship - giảm giá voucher`. Frontend không cần tự lấy danh sách đơn về tính.
+- **Ví dụ gọi API bằng Fetch:**
+
+  ```javascript
+  const stats = await fetch('/shop/statistics', {
+    headers: { Authorization: `Bearer ${token}` },
+  }).then((r) => r.json())
+
+  // Response:
+  // {
+  //   "today": { "totalOrders": 15, "totalRevenue": 2500000 },
+  //   "thisMonth": { "totalOrders": 120, "totalRevenue": 24500000 }
+  // }
+  ```
 
 > **Lưu ý:** Hiện tại `shopId` của một Shop luôn bằng với `userId` (1-1 relationship) nên logic thao tác với đơn hàng, mã giảm giá và video trước đó không bị ảnh hưởng.
 

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common'
 import { ProductTranslationRepo } from './repository/product-translation.repo'
 import { NotFoundRecordException } from 'src/shared/error/error'
 import { CreateProductTranslationBodyType, UpdateProductTranslationBodyType } from './product-translation.model'
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 
 @Injectable()
 export class ProductTranslationService {
@@ -15,8 +16,11 @@ export class ProductTranslationService {
   }
   async create({ createdById, data }: { createdById: number; data: CreateProductTranslationBodyType }) {
     try {
-      return this.productTranslationRepo.create({ data, createdById })
+      return await this.productTranslationRepo.create({ data, createdById })
     } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError && error.code === 'P2003') {
+        throw NotFoundRecordException
+      }
       if (error instanceof NotFoundException) {
         throw NotFoundRecordException
       }
@@ -25,8 +29,14 @@ export class ProductTranslationService {
   }
   async update({ updatedById, id, data }: { updatedById: number; id: number; data: UpdateProductTranslationBodyType }) {
     try {
-      return this.productTranslationRepo.update({ updatedById, id, data })
+      return await this.productTranslationRepo.update({ updatedById, id, data })
     } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError && error.code === 'P2003') {
+        throw NotFoundRecordException
+      }
+      if (error instanceof PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw NotFoundRecordException
+      }
       if (error instanceof NotFoundException) {
         throw NotFoundRecordException
       }
@@ -35,8 +45,11 @@ export class ProductTranslationService {
   }
   async delete({ deletedById, id }: { deletedById: number; id: number }) {
     try {
-      return this.productTranslationRepo.delete({ deletedById, id })
+      return await this.productTranslationRepo.delete({ deletedById, id })
     } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw NotFoundRecordException
+      }
       if (error instanceof NotFoundException) {
         throw NotFoundRecordException
       }

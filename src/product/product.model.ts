@@ -68,6 +68,8 @@ export const SearchProductQuerySchema = z.object({
   q: z.string(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().default(10),
+  orderBy: z.enum([ORDER_BY.ASC, ORDER_BY.DESC]).default(ORDER_BY.DESC),
+  sortBy: z.enum([SORT_BY.PRICE, SORT_BY.CREATED_AT, SORT_BY.SALE]).default(SORT_BY.CREATED_AT),
 })
 
 export const GetProductsResSchema = z.object({

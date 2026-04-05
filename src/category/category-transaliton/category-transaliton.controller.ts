@@ -14,7 +14,7 @@ import { MessageResDTO } from 'src/shared/dtos/response.dto'
 export class CategoryTransalitonController {
   constructor(private readonly categoryTransalitonService: CategoryTransalitonService) {}
 
-  @Get()
+  @Get(':categoryTranslationId')
   @ZodSerializerDto(GetCategoryTranslationDetailResDTO)
   findById(@Param() params: GetCategoryTranslationParamsDTO) {
     return this.categoryTransalitonService.findById({ id: params.categoryTranslationId })
@@ -26,7 +26,7 @@ export class CategoryTransalitonController {
     return this.categoryTransalitonService.create({ createdById: userId, data: body })
   }
 
-  @Put(':id')
+  @Put(':categoryTranslationId')
   @ZodSerializerDto(GetCategoryTranslationDetailResDTO)
   update(
     @Body() body: CreateCategoryTranslationBodyDTO,
@@ -36,7 +36,7 @@ export class CategoryTransalitonController {
     return this.categoryTransalitonService.update({ id: params.categoryTranslationId, data: body, updatedById: userId })
   }
 
-  @Delete(':id')
+  @Delete(':categoryTranslationId')
   @ZodSerializerDto(MessageResDTO)
   remove(@Param() params: GetCategoryTranslationParamsDTO, @ActiveUser('userId') userId: number) {
     return this.categoryTransalitonService.delete({ id: params.categoryTranslationId, deletedById: userId })

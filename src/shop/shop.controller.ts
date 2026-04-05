@@ -1,6 +1,6 @@
 import { Controller, Post, Get, Body } from '@nestjs/common'
 import { ShopService } from './shop.service'
-import { RegisterShopDTO, GetMyShopResDTO } from './dto/shop.dto'
+import { RegisterShopDTO, GetMyShopResDTO, GetShopStatisticsResDTO } from './dto/shop.dto'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { ActiveUser } from 'src/shared/decorators/active-user.decorator'
 import { MessageResDTO } from 'src/shared/dtos/response.dto'
@@ -19,5 +19,11 @@ export class ShopController {
   @ZodSerializerDto(GetMyShopResDTO)
   getMyShop(@ActiveUser('userId') userId: number) {
     return this.shopService.getMyShop(userId)
+  }
+
+  @Get('statistics')
+  @ZodSerializerDto(GetShopStatisticsResDTO)
+  getStatistics(@ActiveUser('userId') userId: number) {
+    return this.shopService.getStatistics(userId)
   }
 }

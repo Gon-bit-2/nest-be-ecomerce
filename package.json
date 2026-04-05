@@ -7,8 +7,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "initData": "ts-node inittalScript",
-    "dm": "ngrok http --domain=guardlike-danica-unguileful.ngrok-free.dev 9999",
-    "a": "ts-node inittalScript/create-permission.ts",
+    "dm": "npx smee-client --url https://smee.io/H6HcO4agdgUkmeaC --target http://localhost:9999/payment/receiver",
+    "p": "ts-node inittalScript/create-permission.ts",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
@@ -81,6 +81,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.18.0",
+    "@mermaid-js/mermaid-cli": "^11.12.0",
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.1.13",
@@ -99,6 +100,7 @@
     "jest": "^30.0.0",
     "prettier": "^3.4.2",
     "prisma": "^6.14.0",
+    "prisma-erd-generator": "^2.4.2",
     "prisma-json-types-generator": "^3.6.2",
     "react-email": "4.2.8",
     "source-map-support": "^0.5.21",

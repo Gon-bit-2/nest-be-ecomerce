@@ -13,7 +13,7 @@ import { MessageResDTO } from 'src/shared/dtos/response.dto'
 @Controller('brand-translation')
 export class BrandTranslationController {
   constructor(private readonly brandTranslationService: BrandTranslationService) {}
-  @Get()
+  @Get(':brandTranslationId')
   @ZodSerializerDto(GetBrandTranslationDetailResSchema)
   findById(@Param() params: GetBrandTranslationParamsDTO) {
     return this.brandTranslationService.findById(params.brandTranslationId)
