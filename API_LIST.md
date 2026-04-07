@@ -1109,7 +1109,9 @@ _Note: Currently expects `cartItemId` via parameters but route definition may ne
 
 ### Get Order List
 
-**GET** `/order`
+**GET** `/order` (Lấy đơn hàng cơ bản dựa theo role, nhưng nên dùng API role cụ thể bên dưới để chính xác hơn)
+**GET** `/order/buyer` (Lấy các đơn hàng do chính user hiện tại ĐẶT MUA)
+**GET** `/order/seller` (Lấy các đơn hàng KHÁCH ĐẶT MUA từ shop của SELLER hiện tại. Nếu là ADMIN sẽ lấy toàn bộ đơn hàng trên hệ thống)
 
 **Headers**
 

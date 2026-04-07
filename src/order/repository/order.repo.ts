@@ -127,14 +127,22 @@ export class OrderRepo {
     return { discountAmount, shippingDiscount }
   }
 
-  async list(userId: number, query: GetOrderListQueryType) {
+  async list(userId: number, query: GetOrderListQueryType, roleName: string) {
     const { limit, page, status } = query
     const skip = (page - 1) * limit
     const take = limit
-    const where: Prisma.OrderWhereInput = {
-      userId,
-      status,
+
+    const where: Prisma.OrderWhereInput = { status }
+
+    // Phân quyền dữ liệu theo role:
+    if (roleName === 'SELLER') {
+      where.shopId = userId
+    } else if (roleName !== 'ADMIN') {
+      // Default (BUYER): Chỉ lấy đơn hàng của chính user đó mua
+      where.userId = userId
     }
+    // Với Admin (roleName === 'ADMIN'): Không giới hạn userId hay shopId (được xem tất cả)
+
     const data$ = await this.prismaService.order.findMany({
       where,
       include: {
@@ -385,31 +393,46 @@ export class OrderRepo {
       orders,
     }
   }
-  async detail(userId: number, orderId: number): Promise<GetOrderDetailResType> {
+  async detail(userId: number, orderId: number, roleName: string): Promise<GetOrderDetailResType> {
     const order = await this.prismaService.order.findUnique({
       where: {
         id: orderId,
-        userId,
         deletedAt: null,
       },
       include: {
         items: true,
       },
     })
+
     if (!order) {
       throw OrdetNotFoundException
     }
+
+    if (roleName === 'SELLER' && order.shopId !== userId) {
+      throw OrdetNotFoundException
+    } else if (roleName !== 'ADMIN' && roleName !== 'SELLER' && order.userId !== userId) {
+      throw OrdetNotFoundException
+    }
+
     return order
   }
-  async updateStatus(orderId: number, userId: number, body: UpdateOrderStatusType) {
+
+  async updateStatus(orderId: number, userId: number, body: UpdateOrderStatusType, roleName: string) {
     const order = await this.prismaService.order.findUnique({
       where: {
         id: orderId,
-        userId,
         deletedAt: null,
       },
     })
+
     if (!order) {
+      throw OrdetNotFoundException
+    }
+
+    // Role check logic for status update
+    if (roleName === 'SELLER' && order.shopId !== userId) {
+      throw OrdetNotFoundException
+    } else if (roleName !== 'ADMIN' && roleName !== 'SELLER' && order.userId !== userId) {
       throw OrdetNotFoundException
     }
 
@@ -437,18 +460,25 @@ export class OrderRepo {
       },
     })
   }
-  async cancel(userId: number, orderId: number): Promise<CancelOrderResType> {
+  async cancel(userId: number, orderId: number, roleName: string): Promise<CancelOrderResType> {
     try {
       const order = await this.prismaService.order.findUniqueOrThrow({
         where: {
           id: orderId,
-          userId,
           deletedAt: null,
         },
         include: {
           discountUsages: true,
         },
       })
+
+      // Role check: Only buyer or admin/seller can cancel
+      if (roleName === 'SELLER' && order.shopId !== userId) {
+        throw OrdetNotFoundException
+      } else if (roleName !== 'ADMIN' && roleName !== 'SELLER' && order.userId !== userId) {
+        throw OrdetNotFoundException
+      }
+
       if (order.status !== ORDER_STATUS.UNPAID) {
         throw CanNotCancelOrderException
       }
@@ -458,7 +488,6 @@ export class OrderRepo {
         const updated = await tx.order.update({
           where: {
             id: orderId,
-            userId,
             deletedAt: null,
           },
           data: {

@@ -18,14 +18,40 @@ export class OrderController {
   constructor(private readonly orderService: OrderService) {}
   @Get()
   @ZodSerializerDto(GetOrderListResDTO)
-  async list(@Query() query: GetOrderListQueryDTO, @ActiveUser('userId') userId: number) {
-    return this.orderService.list(userId, query)
+  async list(
+    @Query() query: GetOrderListQueryDTO,
+    @ActiveUser('userId') userId: number,
+    @ActiveUser('roleName') roleName: string,
+  ) {
+    return this.orderService.list(userId, query, roleName)
+  }
+
+  @Get('seller')
+  @ZodSerializerDto(GetOrderListResDTO)
+  async listSeller(
+    @Query() query: GetOrderListQueryDTO,
+    @ActiveUser('userId') userId: number,
+    @ActiveUser('roleName') roleName: string,
+  ) {
+    // Nếu là Admin thì vẫn giữ quyền Admin để Get toàn bộ đơn hàng
+    return this.orderService.list(userId, query, roleName === 'ADMIN' ? 'ADMIN' : 'SELLER')
+  }
+
+  @Get('buyer')
+  @ZodSerializerDto(GetOrderListResDTO)
+  async listBuyer(@Query() query: GetOrderListQueryDTO, @ActiveUser('userId') userId: number) {
+    // Explicitly pass 'BUYER' to force listing buyer orders
+    return this.orderService.list(userId, query, 'BUYER')
   }
 
   @Get(':orderId')
   @ZodSerializerDto(GetOrderDetailResDTO)
-  async detail(@ActiveUser('userId') userId: number, @Param() param: GetOrderParamsDTO) {
-    return this.orderService.detail(userId, param.orderId)
+  async detail(
+    @ActiveUser('userId') userId: number,
+    @Param() param: GetOrderParamsDTO,
+    @ActiveUser('roleName') roleName: string,
+  ) {
+    return this.orderService.detail(userId, param.orderId, roleName)
   }
   @Post()
   @ZodSerializerDto(CreateOrderBodyResDTO)
@@ -35,8 +61,12 @@ export class OrderController {
 
   @Put(':orderId')
   @ZodSerializerDto(CancelOrderResDTO)
-  async cancel(@ActiveUser('userId') userId: number, @Param() param: GetOrderParamsDTO) {
-    return this.orderService.cancel(userId, param.orderId)
+  async cancel(
+    @ActiveUser('userId') userId: number,
+    @Param() param: GetOrderParamsDTO,
+    @ActiveUser('roleName') roleName: string,
+  ) {
+    return this.orderService.cancel(userId, param.orderId, roleName)
   }
 
   @Post(':orderId/status')
@@ -45,7 +75,8 @@ export class OrderController {
     @ActiveUser('userId') userId: number,
     @Param() param: GetOrderParamsDTO,
     @Body() body: UpdateOrderStatusDTO,
+    @ActiveUser('roleName') roleName: string,
   ) {
-    return this.orderService.updateStatus(userId, param.orderId, body)
+    return this.orderService.updateStatus(userId, param.orderId, body, roleName)
   }
 }

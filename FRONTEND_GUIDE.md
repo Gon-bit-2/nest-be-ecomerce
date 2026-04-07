@@ -744,3 +744,22 @@ socket.on('new-notification', (data) => {
 1. Gọi **API GET /notifications** ở lần load trang đầu tiên hoặc khi mở danh sách (kèm `isRead=false` để lấy số lượng chuông thông báo chưa đọc).
 2. Khi người dùng click vào một dòng thông báo, gọi **API PATCH /notifications/:notificationId/read** để đánh dấu đã xem, sau đó redirect bằng URL trong `data.url`.
 3. Nếu người dùng chọn 'Đánh dấu tất cả đã đọc', gọi **API PATCH /notifications/read-all**.
+
+## 16. Phân Quyền Call API Get Đơn Hàng (Order Module)
+
+Hệ thống có sự phân loại rõ ràng cách hiển thị và trả về danh sách Đơn Hàng theo Quyền Người Dùng (Role). Frontend cần gọi đúng Endpoint để lấy dữ liệu.
+
+### a. Dành Cho Seller/Admin (Màn hình Quản Lý Bán Hàng)
+- **API:** `GET /order/seller` (Query Params: `page`, `limit`, `status`)
+- **Mô tả:** Lấy danh sách các đơn hàng mà khách hàng ĐÃ ĐẶT TỪ SHOP của Cửa Hàng. (Tức là `shopId` của đơn hàng trùng khớp với ID của Seller).
+- **Lưu ý Admin:** Nếu token là của Admin, khi gọi API này, hệ thống tự động trả về **TOÀN BỘ ĐƠN HÀNG** của mọi shop để Admin có thể xem được tất cả số liệu kinh doanh trên toàn hệ thống.
+
+### b. Dành Cho Buyer/User thông thường (Màn hình "Đơn Hàng Của Tôi")
+- **API:** `GET /order/buyer` (Query Params: `page`, `limit`, `status`)
+- **Mô tả:** Lấy danh sách các đơn hàng mà **chính User hiện tại đã mua** (tức là `userId` của đơn hàng trùng khớp với người dùng đăng nhập), bất kể họ mua của shop nào. 
+- Mọi user (kể cả Seller/Admin) đều có thể đóng vai trò như một khách hàng. Nếu gọi lệnh này thì họ chỉ thấy các đơn hàng họ đang mua hàng. 
+
+### c. API Mặc định (Khuyên dùng 2 API trên thay thế)
+- **API:** `GET /order`
+- **Mô tả:** API mặc định từ cũ sử dụng cơ chế tự suy luận tự động. Tuy nhiên hiện tại việc định hướng rõ ràng `buyer` hay `seller` trong path API là bắt buộc để Backend trả về chuẩn Data cho Frontend. 
+

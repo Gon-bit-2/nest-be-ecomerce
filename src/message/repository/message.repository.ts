@@ -53,7 +53,15 @@ export class MessageRepository {
           toUserId: receiverId,
           content,
         },
-        include: { fromUser: true, toUser: true },
+
+        include: {
+          fromUser: {
+            select: { id: true, name: true, avatar: true, email: true },
+          },
+          toUser: {
+            select: { id: true, name: true, avatar: true, email: true },
+          },
+        },
       })
 
       await tx.conversation.update({
@@ -74,8 +82,12 @@ export class MessageRepository {
         OR: [{ userAId: userId }, { userBId: userId }],
       },
       include: {
-        userA: true,
-        userB: true,
+        userA: {
+          select: { id: true, name: true, avatar: true, email: true },
+        },
+        userB: {
+          select: { id: true, name: true, avatar: true, email: true },
+        },
         lastMessage: true,
       },
       orderBy: { updatedAt: 'desc' },
@@ -91,7 +103,11 @@ export class MessageRepository {
     return await this.prismaService.message.findMany({
       where: { conversationId },
       orderBy: { createdAt: 'asc' },
-      include: { fromUser: true },
+      include: {
+        fromUser: {
+          select: { id: true, name: true, avatar: true, email: true },
+        },
+      },
     })
   }
 }

@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import { CreateMessageBodyType } from './model/message.model'
 import { MessageRepository } from './repository/message.repository'
 import { MessageGateway } from './gateway/message.gateway'
@@ -8,6 +9,7 @@ export class MessageService {
   constructor(
     private readonly messageRepo: MessageRepository,
     private readonly messageGateway: MessageGateway,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async sendMessage(senderId: number, dto: CreateMessageBodyType) {
@@ -23,6 +25,14 @@ export class MessageService {
     this.messageGateway.sendToUser(receiverId, 'new_message', message)
     // Emit socket event to sender (optional, for syncing multiple devices)
     this.messageGateway.sendToUser(senderId, 'new_message', message)
+
+    // Trigger notification
+    this.eventEmitter.emit('notification.send', {
+      userId: receiverId,
+      title: `Tin nhắn mới từ ${message.fromUser?.name || 'người dùng mới'}`,
+      body: content,
+      type: 'SYSTEM', // Hoặc type phù hợp như MESSAGE
+    })
 
     return message
   }

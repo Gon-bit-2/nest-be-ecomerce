@@ -10,8 +10,8 @@ export class OrderService {
     private readonly addressService: AddressService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
-  async list(userId: number, query: GetOrderListQueryType) {
-    return this.orderRepo.list(userId, query)
+  async list(userId: number, query: GetOrderListQueryType, roleName: string) {
+    return this.orderRepo.list(userId, query, roleName)
   }
   async create(userId: number, body: CreateOrderBodyType) {
     // Resolve userAddressId thành receiver nếu cần
@@ -55,11 +55,11 @@ export class OrderService {
     })
     return result
   }
-  async detail(userId: number, orderId: number) {
-    return this.orderRepo.detail(userId, orderId)
+  async detail(userId: number, orderId: number, roleName: string) {
+    return this.orderRepo.detail(userId, orderId, roleName)
   }
-  async cancel(userId: number, orderId: number) {
-    const cancelledOrder = await this.orderRepo.cancel(userId, orderId)
+  async cancel(userId: number, orderId: number, roleName: string) {
+    const cancelledOrder = await this.orderRepo.cancel(userId, orderId, roleName)
     this.eventEmitter.emit('notification.send', {
       userId: userId, // Bắn cho người mua
       title: 'Đơn hàng đã được hủy',
@@ -70,7 +70,7 @@ export class OrderService {
 
     return cancelledOrder
   }
-  async updateStatus(userId: number, orderId: number, body: UpdateOrderStatusType) {
-    return this.orderRepo.updateStatus(orderId, userId, body)
+  async updateStatus(userId: number, orderId: number, body: UpdateOrderStatusType, roleName: string) {
+    return this.orderRepo.updateStatus(orderId, userId, body, roleName)
   }
 }
