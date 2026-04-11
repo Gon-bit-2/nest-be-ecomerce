@@ -885,6 +885,7 @@ _No Body_
 
 _No Auth Headers_
 _No Body_
+_Note: Product items in response include the total quantity sold as `sold` field (defaults to 0)._
 
 **Query Params:**
 
@@ -905,6 +906,7 @@ _No Body_
 
 _No Auth Headers_
 _No Body_
+_Note: Product items in response include the total quantity sold as `sold` field (defaults to 0)._
 
 **Query Params:**
 
@@ -920,6 +922,7 @@ _No Body_
 
 _No Auth Headers_
 _No Body_
+_Note: Response object includes the total quantity sold as `sold` field (defaults to 0)._
 
 ### Get Product Variants
 
@@ -955,6 +958,7 @@ _No Body_
 - `Authorization`: `Bearer <accessToken>`
 
 _No Body_
+_Note: Response object includes the total quantity sold as `sold` field (defaults to 0)._
 
 ### Create Product
 

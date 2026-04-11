@@ -353,13 +353,18 @@ _Chỉ cần truyền một trong hai (`receiver` hoặc `userAddressId`). Có t
 
 _`shippingFee` có thể bỏ qua (backend mặc định `0`), nhưng nên truyền giá trị thực tế để voucher freeship (`SHIPPING`) tính chính xác._
 
-## 12. Tìm Kiếm Sản Phẩm
+## 12. Tìm Kiếm & Hiển Thị Sản Phẩm
 
-- Gọi `GET /product/search?q=keyword&page=1&limit=10&sortBy=price&orderBy=asc` để tìm sản phẩm theo từ khóa.
+- **Tìm kiếm sản phẩm:** Gọi `GET /product/search?q=keyword&page=1&limit=10&sortBy=price&orderBy=asc` để tìm sản phẩm theo từ khóa.
 - Tham số `q` là bắt buộc.
-- Endpoint này tách biệt với `GET /product` (list with filters). Phù hợp cho tính năng Search và hiển thị kết quả tìm kiếm với các tùy chọn sắp xếp:
+- Endpoint tìm kiếm tách biệt với `GET /product` (list with filters). Phù hợp cho tính năng Search và hiển thị kết quả tìm kiếm với các tùy chọn sắp xếp:
   - `sortBy`: "price" (Giá), "createdAt" (Mới nhất), "sale" (Bán chạy). Mặc định là "createdAt".
   - `orderBy`: "asc" (Tăng dần), "desc" (Giảm dần). Mặc định là "desc".
+
+**Lưu ý về dữ liệu trả về (Số lượng đã bán):**
+
+- Tất cả các endpoint trả về danh sách sản phẩm hoặc chi tiết sản phẩm (`GET /product`, `GET /product/search`, `GET /product/:id`) giờ đây đã tích hợp sẵn trường `sold` (số lượng đã bán).
+- Nếu sản phẩm chưa có lượt mua, backend sẽ tự động trả về `sold: 0`. Frontend có thể trực tiếp render `product.sold` ra giao diện mà không lo nhận về `null` hay `undefined`.
 
 ## 13. Tích Hợp Thanh Toán SePay (QR Code Transfer)
 
@@ -750,16 +755,18 @@ socket.on('new-notification', (data) => {
 Hệ thống có sự phân loại rõ ràng cách hiển thị và trả về danh sách Đơn Hàng theo Quyền Người Dùng (Role). Frontend cần gọi đúng Endpoint để lấy dữ liệu.
 
 ### a. Dành Cho Seller/Admin (Màn hình Quản Lý Bán Hàng)
+
 - **API:** `GET /order/seller` (Query Params: `page`, `limit`, `status`)
 - **Mô tả:** Lấy danh sách các đơn hàng mà khách hàng ĐÃ ĐẶT TỪ SHOP của Cửa Hàng. (Tức là `shopId` của đơn hàng trùng khớp với ID của Seller).
 - **Lưu ý Admin:** Nếu token là của Admin, khi gọi API này, hệ thống tự động trả về **TOÀN BỘ ĐƠN HÀNG** của mọi shop để Admin có thể xem được tất cả số liệu kinh doanh trên toàn hệ thống.
 
 ### b. Dành Cho Buyer/User thông thường (Màn hình "Đơn Hàng Của Tôi")
+
 - **API:** `GET /order/buyer` (Query Params: `page`, `limit`, `status`)
-- **Mô tả:** Lấy danh sách các đơn hàng mà **chính User hiện tại đã mua** (tức là `userId` của đơn hàng trùng khớp với người dùng đăng nhập), bất kể họ mua của shop nào. 
-- Mọi user (kể cả Seller/Admin) đều có thể đóng vai trò như một khách hàng. Nếu gọi lệnh này thì họ chỉ thấy các đơn hàng họ đang mua hàng. 
+- **Mô tả:** Lấy danh sách các đơn hàng mà **chính User hiện tại đã mua** (tức là `userId` của đơn hàng trùng khớp với người dùng đăng nhập), bất kể họ mua của shop nào.
+- Mọi user (kể cả Seller/Admin) đều có thể đóng vai trò như một khách hàng. Nếu gọi lệnh này thì họ chỉ thấy các đơn hàng họ đang mua hàng.
 
 ### c. API Mặc định (Khuyên dùng 2 API trên thay thế)
-- **API:** `GET /order`
-- **Mô tả:** API mặc định từ cũ sử dụng cơ chế tự suy luận tự động. Tuy nhiên hiện tại việc định hướng rõ ràng `buyer` hay `seller` trong path API là bắt buộc để Backend trả về chuẩn Data cho Frontend. 
 
+- **API:** `GET /order`
+- **Mô tả:** API mặc định từ cũ sử dụng cơ chế tự suy luận tự động. Tuy nhiên hiện tại việc định hướng rõ ràng `buyer` hay `seller` trong path API là bắt buộc để Backend trả về chuẩn Data cho Frontend.

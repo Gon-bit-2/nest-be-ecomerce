@@ -125,8 +125,36 @@ export class ProductRepo {
         where,
       }),
     ])
+
+    const productIds = data.map((p) => p.id)
+    let sortedData: any[] = data
+
+    if (productIds.length > 0) {
+      const soldStats = await this.prismaService.productSKUSnapshot.groupBy({
+        by: ['productId'],
+        _sum: {
+          quantity: true,
+        },
+        where: {
+          productId: { in: productIds },
+          order: {
+            status: 'COMPLETED',
+            deletedAt: null,
+          },
+        },
+      })
+
+      sortedData = data.map((product) => {
+        const stat = soldStats.find((s) => s.productId === product.id)
+        return {
+          ...product,
+          sold: stat?._sum.quantity || 0,
+        }
+      })
+    }
+
     return {
-      data,
+      data: sortedData,
       totalItems,
       page,
       limit,
@@ -230,7 +258,31 @@ export class ProductRepo {
     })
 
     // 4. Sắp xếp lại kết quả theo thứ tự ID trả về từ Raw Query (để đảm bảo độ chính xác của tìm kiếm)
-    const sortedProducts = ids.map((id) => products.find((p) => p.id === id)).filter((p) => p !== undefined) as any
+    let sortedProducts: any[] = ids.map((id) => products.find((p) => p.id === id)).filter((p) => p !== undefined)
+
+    if (ids.length > 0) {
+      const soldStats = await this.prismaService.productSKUSnapshot.groupBy({
+        by: ['productId'],
+        _sum: {
+          quantity: true,
+        },
+        where: {
+          productId: { in: ids },
+          order: {
+            status: 'COMPLETED',
+            deletedAt: null,
+          },
+        },
+      })
+
+      sortedProducts = sortedProducts.map((product: Record<string, any> & { id: number }) => {
+        const stat = soldStats.find((s) => s.productId === product.id)
+        return {
+          ...product,
+          sold: stat?._sum?.quantity || 0,
+        }
+      })
+    }
 
     return {
       data: sortedProducts,
@@ -284,7 +336,7 @@ export class ProductRepo {
         OR: [{ publishedAt: null }, { publishedAt: { gt: new Date() } }],
       }
     }
-    return this.prismaService.product.findUnique({
+    const product = await this.prismaService.product.findUnique({
       where,
       include: {
         productTranslations: {
@@ -314,6 +366,26 @@ export class ProductRepo {
         },
       },
     })
+
+    if (!product) return null
+
+    const soldStats = await this.prismaService.productSKUSnapshot.aggregate({
+      _sum: {
+        quantity: true,
+      },
+      where: {
+        productId: product.id,
+        order: {
+          status: 'COMPLETED',
+          deletedAt: null,
+        },
+      },
+    })
+
+    return {
+      ...product,
+      sold: soldStats._sum.quantity || 0,
+    } as any
   }
 
   create({
@@ -324,57 +396,59 @@ export class ProductRepo {
     data: CreateProductBodyType
   }): Promise<GetProductDetailResType> {
     const { skus, categories, publishedAt, ...productData } = data
-    return this.prismaService.product.create({
-      data: {
-        ...productData,
-        publishedAt: publishedAt ? new Date(publishedAt) : null,
-        createdById,
-        categories: {
-          connect: categories.map((category) => ({ id: category })),
-        },
-        skus: {
-          createMany: {
-            data: skus.map((sku) => ({
-              ...sku,
-              createdById,
-            })),
+    return this.prismaService.product
+      .create({
+        data: {
+          ...productData,
+          publishedAt: publishedAt ? new Date(publishedAt) : null,
+          createdById,
+          categories: {
+            connect: categories.map((category) => ({ id: category })),
+          },
+          skus: {
+            createMany: {
+              data: skus.map((sku) => ({
+                ...sku,
+                createdById,
+              })),
+            },
           },
         },
-      },
-      include: {
-        productTranslations: {
-          where: {
-            deletedAt: null,
+        include: {
+          productTranslations: {
+            where: {
+              deletedAt: null,
+            },
           },
-        },
-        skus: {
-          where: {
-            deletedAt: null,
+          skus: {
+            where: {
+              deletedAt: null,
+            },
           },
-        },
-        brand: {
-          include: {
-            brandTranslations: {
-              where: {
-                deletedAt: null,
+          brand: {
+            include: {
+              brandTranslations: {
+                where: {
+                  deletedAt: null,
+                },
+              },
+            },
+          },
+          categories: {
+            where: {
+              deletedAt: null,
+            },
+            include: {
+              categoryTranslations: {
+                where: {
+                  deletedAt: null,
+                },
               },
             },
           },
         },
-        categories: {
-          where: {
-            deletedAt: null,
-          },
-          include: {
-            categoryTranslations: {
-              where: {
-                deletedAt: null,
-              },
-            },
-          },
-        },
-      },
-    })
+      })
+      .then((res) => ({ ...res, sold: 0 })) as unknown as Promise<GetProductDetailResType>
   }
 
   async update({

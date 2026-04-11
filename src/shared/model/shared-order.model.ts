@@ -49,6 +49,7 @@ export const ProductSKUSnapshotSchema = z.object({
   skuValue: z.string(),
   image: z.string(),
   quantity: z.number(),
+  isReviewed: z.boolean().optional(),
 
   createdAt: z.date(),
 })

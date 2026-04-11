@@ -17,6 +17,9 @@ export class CategoryService {
         if (error.code === 'P2002') {
           throw new Error('Category name already exists')
         }
+        if (error.code === 'P2003') {
+          throw new Error('Parent category not found')
+        }
       }
       throw error
     }
@@ -43,12 +46,24 @@ export class CategoryService {
   }
 
   async update({ id, data, updatedById }: { id: number; data: UpdateCategoryBodyType; updatedById: number }) {
+    if (data.parentCategoryId === id) {
+      throw new Error('A category cannot be its own parent')
+    }
+
+    // Nếu client vô tình gửi parentCategoryId = 0 để biểu thị "không có danh mục cha", chuyển nó thành null
+    if (data.parentCategoryId === 0) {
+      data.parentCategoryId = null
+    }
+
     try {
       return await this.categoryRepo.update({ id, data, updatedById })
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {
           throw new Error('Category not found')
+        }
+        if (error.code === 'P2003') {
+          throw new Error('Parent category not found')
         }
       }
       if (error instanceof NotFoundException) {

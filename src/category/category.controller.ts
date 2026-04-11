@@ -28,7 +28,7 @@ export class CategoryController {
   @isPublic()
   @ZodSerializerDto(GetCategoryDetailResDTO)
   findById(@Param() params: GetCategoryParamsDTO) {
-    return this.categoryService.findById({ id: params.categoryId })
+    return this.categoryService.findById({ id: params.id })
   }
 
   @Post()
@@ -44,12 +44,12 @@ export class CategoryController {
     @Body() updateCategoryDto: UpdateCategoryDTO,
     @ActiveUser('userId') userId: number,
   ) {
-    return this.categoryService.update({ id: params.categoryId, data: updateCategoryDto, updatedById: userId })
+    return this.categoryService.update({ id: params.id, data: updateCategoryDto, updatedById: userId })
   }
 
   @Delete(':id')
   @ZodSerializerDto(MessageResDTO)
   remove(@Param() params: GetCategoryParamsDTO, @ActiveUser('userId') userId: number) {
-    return this.categoryService.delete({ id: params.categoryId, deletedById: userId })
+    return this.categoryService.delete({ id: params.id, deletedById: userId })
   }
 }

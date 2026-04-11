@@ -21,7 +21,7 @@ export class DiscountController {
   constructor(private readonly discountService: DiscountService) {}
 
   @Get()
-  @IsAdmin()
+  @Roles(roleName.Admin, roleName.Seller)
   @ZodSerializerDto(GetDiscountListResDTO)
   async list(@Query() pagination: GetDiscountListDTO) {
     return this.discountService.list(pagination)

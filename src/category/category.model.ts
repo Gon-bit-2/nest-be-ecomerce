@@ -12,17 +12,19 @@ export const GetAllCategoriesQuerySchema = z.object({
 
 export const GetCategoryParamsSchema = z
   .object({
-    categoryId: z.coerce.number().int().positive(),
+    id: z.coerce.number().int().positive(),
   })
   .strict()
 
 export const GetCategoryDetailResSchema = CategoryIncludeTranslationSchema
 
-export const CreatCategoryBodySchema = CategorySchema.pick({
-  name: true,
-  logo: true,
-  parentCategoryId: true,
-}).strict()
+export const CreatCategoryBodySchema = z
+  .object({
+    name: CategorySchema.shape.name,
+    logo: CategorySchema.shape.logo,
+    parentCategoryId: CategorySchema.shape.parentCategoryId.optional(),
+  })
+  .strict()
 export const UpdateCategoryBodySchema = CreatCategoryBodySchema
 
 export type CategoryType = z.infer<typeof CategorySchema>

@@ -143,10 +143,13 @@ export class OrderRepo {
     }
     // Với Admin (roleName === 'ADMIN'): Không giới hạn userId hay shopId (được xem tất cả)
 
-    const data$ = await this.prismaService.order.findMany({
+    const data$ = this.prismaService.order.findMany({
       where,
       include: {
         items: true,
+        reviews: {
+          select: { productId: true },
+        },
       },
       take,
       skip,
@@ -154,12 +157,22 @@ export class OrderRepo {
         createdAt: 'desc',
       },
     })
-    const totalItem$ = await this.prismaService.order.count({
+    const totalItem$ = this.prismaService.order.count({
       where,
     })
     const [data, totalItems] = await Promise.all([data$, totalItem$])
+
+    const mappedData = data.map((order) => {
+      const items = order.items.map((item) => ({
+        ...item,
+        isReviewed: order.reviews.some((review) => review.productId === item.productId),
+      }))
+      const { reviews, ...rest } = order
+      return { ...rest, items }
+    })
+
     return {
-      data,
+      data: mappedData,
       totalItems,
       limit,
       page,
@@ -394,13 +407,22 @@ export class OrderRepo {
     }
   }
   async detail(userId: number, orderId: number, roleName: string): Promise<GetOrderDetailResType> {
-    const order = await this.prismaService.order.findUnique({
-      where: {
-        id: orderId,
-        deletedAt: null,
-      },
+    const whereCondition: Prisma.OrderWhereInput = {
+      id: orderId,
+      deletedAt: null,
+    }
+
+    if (roleName !== 'ADMIN') {
+      whereCondition.OR = [{ createdById: userId }, { shopId: userId }, { userId: userId }]
+    }
+
+    const order = await this.prismaService.order.findFirst({
+      where: whereCondition,
       include: {
         items: true,
+        reviews: {
+          select: { productId: true },
+        },
       },
     })
 
@@ -408,31 +430,30 @@ export class OrderRepo {
       throw OrdetNotFoundException
     }
 
-    if (roleName === 'SELLER' && order.shopId !== userId) {
-      throw OrdetNotFoundException
-    } else if (roleName !== 'ADMIN' && roleName !== 'SELLER' && order.userId !== userId) {
-      throw OrdetNotFoundException
-    }
+    const items = order.items.map((item) => ({
+      ...item,
+      isReviewed: order.reviews.some((review) => review.productId === item.productId),
+    }))
+    const { reviews, ...rest } = order
 
-    return order
+    return { ...rest, items }
   }
 
   async updateStatus(orderId: number, userId: number, body: UpdateOrderStatusType, roleName: string) {
-    const order = await this.prismaService.order.findUnique({
-      where: {
-        id: orderId,
-        deletedAt: null,
-      },
+    const whereCondition: Prisma.OrderWhereInput = {
+      id: orderId,
+      deletedAt: null,
+    }
+
+    if (roleName !== 'ADMIN') {
+      whereCondition.OR = [{ createdById: userId }, { shopId: userId }, { userId: userId }]
+    }
+
+    const order = await this.prismaService.order.findFirst({
+      where: whereCondition,
     })
 
     if (!order) {
-      throw OrdetNotFoundException
-    }
-
-    // Role check logic for status update
-    if (roleName === 'SELLER' && order.shopId !== userId) {
-      throw OrdetNotFoundException
-    } else if (roleName !== 'ADMIN' && roleName !== 'SELLER' && order.userId !== userId) {
       throw OrdetNotFoundException
     }
 
@@ -462,22 +483,21 @@ export class OrderRepo {
   }
   async cancel(userId: number, orderId: number, roleName: string): Promise<CancelOrderResType> {
     try {
-      const order = await this.prismaService.order.findUniqueOrThrow({
-        where: {
-          id: orderId,
-          deletedAt: null,
-        },
+      const whereCondition: Prisma.OrderWhereInput = {
+        id: orderId,
+        deletedAt: null,
+      }
+
+      if (roleName !== 'ADMIN') {
+        whereCondition.OR = [{ createdById: userId }, { shopId: userId }, { userId: userId }]
+      }
+
+      const order = await this.prismaService.order.findFirstOrThrow({
+        where: whereCondition,
         include: {
           discountUsages: true,
         },
       })
-
-      // Role check: Only buyer or admin/seller can cancel
-      if (roleName === 'SELLER' && order.shopId !== userId) {
-        throw OrdetNotFoundException
-      } else if (roleName !== 'ADMIN' && roleName !== 'SELLER' && order.userId !== userId) {
-        throw OrdetNotFoundException
-      }
 
       if (order.status !== ORDER_STATUS.UNPAID) {
         throw CanNotCancelOrderException
